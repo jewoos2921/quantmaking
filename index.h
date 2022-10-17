@@ -6,11 +6,11 @@
 
 class CIndex {
 public:
-    void get_spot();
+    CIndex();
 
-    void get_vol();
+    CIndex(double spot, double vol, double dividend);
 
-    void get_dividend();
+    ~CIndex();
 
 public:
     double m_spot;

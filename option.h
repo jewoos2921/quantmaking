@@ -17,9 +17,12 @@ public:
     double m_optionprice;
 
 public:
-    void get_strike();
 
-    void get_maturity();
+    COption();
+
+    COption(double strike, double maturity);
+
+    ~COption();
 
     double N(double z);
 

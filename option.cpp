@@ -9,15 +9,6 @@
 
 #define PI 3.14159265358979323846264338327950288419716939937510582097
 
-void COption::get_strike() {
-    std::cout << "행사 가격: ";
-    std::cin >> m_strike;
-}
-
-void COption::get_maturity() {
-    std::cout << "잔존 만기(년): ";
-    std::cin >> m_maturity;
-}
 
 double COption::N(double z) {
     double a1, a2, a3, a4, a5, r, c;
@@ -57,4 +48,20 @@ void COption::european_calloption_price(CIndex &cIndex, CYield &cYield) {
     m_optionprice = spot * std::exp(-dividend * m_maturity) * N(d1)
                     - m_strike * std::exp(-riskfree * m_maturity) * N(d2);
 
+}
+
+COption::COption() {
+    std::cout << "COption 디폴트 생성자" << std::endl;
+    m_strike = 105.0;
+    m_maturity = 1.0;
+}
+
+COption::~COption() {
+    std::cout << "COption 소멸자" << std::endl;
+}
+
+COption::COption(double strike, double maturity) {
+    std::cout << "COption 생성자" << std::endl;
+    m_strike = strike;
+    m_maturity = maturity;
 }

@@ -4,8 +4,16 @@
 #include <iostream>
 #include "yield.h"
 
-void CYield::get_riskfree() {
-    std::cout << "무위험 이자율(%): ";
-    std::cin >> m_riskfree;
-    m_riskfree /= 100.0;
+CYield::CYield() {
+    std::cout << "CYield 디폴트 생성자" << std::endl;
+    m_riskfree = 0.05;
+}
+
+CYield::~CYield() {
+    std::cout << "CYield 소멸자" << std::endl;
+}
+
+CYield::CYield(double riskfree) {
+    std::cout << "CYield 생성자" << std::endl;
+    m_riskfree = riskfree;
 }

@@ -3,9 +3,13 @@
 //
 
 #pragma once
-class CYield{
+
+class CYield {
 public:
     double m_riskfree;
 public:
-    void get_riskfree();
+    CYield();
+
+    CYield(double riskfree);
+    ~CYield();
 };
