@@ -26,3 +26,5 @@ double nonlinear_function(double X);
 double bisection_method();
 
 double newtonraphson_method();
+
+double linear_interpolation(int n_data, int *x_data, double *y_data, int x);

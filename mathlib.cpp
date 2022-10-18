@@ -228,3 +228,16 @@ double newtonraphson_method() {
     return x;
 
 }
+
+double linear_interpolation(int n_data, int *x_data, double *y_data, int x) {
+    int i;
+    double y = 0;
+    for (i = 0; i < n_data; ++i) {
+        if (x_data[i] > x) {
+            y = y_data[i - 1] + (y_data[i] - y_data[i - 1]) / (x_data[i] - x_data[i - 1]) * (x - x_data[i - 1]);
+            break;
+        } else
+            continue;
+    }
+    return y;
+}
