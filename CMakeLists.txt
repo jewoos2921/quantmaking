@@ -3,6 +3,13 @@ project(quantmaking)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(quantmaking main.cpp index.cpp index.h yield.cpp
-        option.cpp  mathlib.cpp nonlinearsolver.cpp
+add_executable(quantmaking
+        main.cpp
+        index.cpp
+        yield.cpp
+        option.cpp
+        mathlib.cpp
+        nonlinearsolver.cpp
+        data.cpp
+        mainNet.cpp
         )
