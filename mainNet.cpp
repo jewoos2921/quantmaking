@@ -422,4 +422,30 @@ void make_normal_distribution_goodness_fit_test() {
     delete[] randnum;
 }
 
+void make_inverse_normal_cumulative_distribution_function() {
+    std::srand(static_cast<unsigned int>(std::time(nullptr))); // Random seed 초기화
+    unsigned long i;
+    unsigned long nrand;
+    nrand = 1000000;
+
+    double *randnum;
+    double urn;
+    randnum = new double[nrand];
+
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+
+    /* This is where you define the number generator for double: */
+    std::uniform_real_distribution<double> dis(0, 1);
+
+    for (i = 0; i < nrand; ++i) {
+        urn = dis(gen) / static_cast<double>(RAND_MAX); // [0, 1] 범위의 균등 분포 난수 생성
+        randnum[i] = inverse_normal_cumulative_distribution_function(urn); // 정규분포령 난수 생성
+    }
+
+    normal_distribution_goodness_fit_test(nrand, randnum); // 정규분포 적합성 검증
+
+    delete[] randnum;
+}
+
 

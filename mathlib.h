@@ -40,3 +40,9 @@ double cubicspline_interpolation(int n_data,
 double normdistrand(); // 정규분포 난수 생성
 
 void normal_distribution_goodness_fit_test(unsigned long nrand, double *randnum); // 정규뷴포 적합성 검증
+
+
+
+double inverse_normal_cumulative_distribution_function(double p); // 정규분포 난수 생성
+
+

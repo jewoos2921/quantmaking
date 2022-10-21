@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iomanip>
 #include <ctime>
+#include <random>
 #include "index.h"
 #include "yield.h"
 #include "option.h"
@@ -32,3 +33,5 @@ void make_linear_interpolation();
 void make_cubicspline_interpolation();
 
 void make_normal_distribution_goodness_fit_test();
+
+void make_inverse_normal_cumulative_distribution_function();
