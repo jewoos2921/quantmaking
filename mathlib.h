@@ -28,3 +28,10 @@ double bisection_method();
 double newtonraphson_method();
 
 double linear_interpolation(int n_data, int *x_data, double *y_data, int x);
+
+void set_system_matrix(int n_data, double **Smatrix, double *known, int *x_data,
+                       double *y_data);
+
+double cubicspline_interpolation(int n_data,
+                                 int *x_data,
+                                 double *y_data, int x);

@@ -241,3 +241,105 @@ double linear_interpolation(int n_data, int *x_data, double *y_data, int x) {
     }
     return y;
 }
+
+void set_system_matrix(int n_data, double **Smatrix, double *known, int *x_data, double *y_data) {
+    int i, j;
+    double *hi;
+    hi = new double[n_data - 1];
+
+    for (i = 0; i < n_data - 2; ++i) {
+        for (j = 0; j < n_data - 2; ++j) {
+            Smatrix[i][j] = 0.0;
+        }
+        hi[i] = x_data[i + 1] - x_data[i];
+    }
+
+    hi[n_data - 2] = x_data[n_data - 1] - x_data[n_data - 2];
+
+    // 0~n_data-3는 n_data-2개
+    Smatrix[0][0] = 2 * (hi[0] + hi[1]);
+    Smatrix[0][1] = hi[1];
+    known[0] = 3 * ((y_data[2] - y_data[1]) / hi[1] - (y_data[1] - y_data[0]) / hi[0]);
+
+    for (i = 1; i < n_data - 3; ++i) {
+        Smatrix[i][i - 1] = hi[i];
+        Smatrix[i][i] = 2 * (hi[i] + hi[i + 1]);
+        Smatrix[i][i + 1] = hi[i + 1];
+        known[i] = 3 * ((y_data[i + 2] - y_data[i + 1]) / hi[i + 1] - (y_data[i + 1] - y_data[i]) / hi[i]);
+    }
+
+    Smatrix[n_data - 3][n_data - 4] = hi[n_data - 3];
+    Smatrix[n_data - 3][n_data - 3] = 2 * (hi[n_data - 3] + hi[n_data - 2]);
+
+    known[n_data - 3] = 3 * ((y_data[n_data - 1] - y_data[n_data - 2]) / hi[n_data - 2] -
+                             (y_data[n_data - 2] - y_data[n_data - 3]) / hi[n_data - 3]);
+
+    delete[]hi;
+}
+
+double cubicspline_interpolation(int n_data, int *x_data, double *y_data, int x) {
+    int i, n_eq;
+    double **s_matrix; // 행렬선언
+    double *known_value; // 기지값
+    double *unknown_value; // 미지값
+
+    n_eq = n_data - 2;
+    s_matrix = new double *[n_eq];
+
+    for (i = 0; i < n_eq; ++i) {
+        s_matrix[i] = new double[n_eq];
+    }
+
+    known_value = new double[n_eq];
+    unknown_value = new double[n_eq];
+
+    set_system_matrix(n_data, s_matrix, known_value, x_data, y_data);
+    tridiagonal_elimination(s_matrix, known_value, unknown_value, n_eq);
+
+    double *ci;
+    ci = new double[n_data];
+    for (i = 0; i < n_eq; ++i) {
+        ci[i + 1] = unknown_value[i];
+    }
+    ci[0] = 0.0; // 자연 경계 조건
+    ci[n_data - 1] = 0.0;// 자연 경계 조건
+    double a, b, d, y, hi, xp;
+
+    if (x_data[0] > x) {
+        hi = x_data[1] - x_data[0];
+        xp = x - x_data[0];
+        a = y_data[0];
+        b = (y_data[1] - y_data[0]) / hi - hi * (2 * ci[0] + ci[1]) / 3;
+        d = (ci[1] - ci[0]) / (3 * hi);
+        y = a + b * xp + ci[0] * xp * xp + d * xp * xp * xp;
+    } else if (x_data[n_data - 1] < x) {
+        hi = x_data[n_data - 1] - x_data[n_data - 2];
+        xp = x - x_data[n_data - 2];
+        a = y_data[n_data - 2];
+        b = (y_data[n_data - 1] - y_data[n_data - 2]) / hi - hi * (2 * ci[n_data - 2] + ci[n_data - 1]) / 3;
+        d = (ci[n_data - 1] - ci[n_data - 2]) / (3 * hi);
+        y = a + b * xp + ci[n_data - 2] * xp * xp + d * xp * xp * xp;
+    } else {
+        for (i = 1; i < n_data; ++i) {
+            if (x_data[i] > x) {
+                hi = x_data[i] - x_data[i - 1];
+                xp = x - x_data[i - 1];
+                a = y_data[i - 1];
+                b = (y_data[i] - y_data[i - 1]) / hi - hi * (2 * ci[i - 1] + ci[i]) / 3;
+                d = (ci[i] - ci[i - 1]) / (3 * hi);
+                y = a + b * xp + ci[i - 1] * xp * xp + d * xp * xp * xp;
+                break;
+            } else continue;
+        }
+    }
+
+
+    for (i = 0; i < n_eq; ++i) {
+        delete s_matrix[i];
+    }
+
+    delete[] s_matrix, known_value, unknown_value;
+
+    return y;
+
+}

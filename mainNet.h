@@ -25,3 +25,7 @@ void make_bisection_method_and_newton();
 void make_gauss_newton();
 
 void make_levenberg_marquardt();
+
+void make_linear_interpolation();
+
+void make_cubicspline_interpolation();

@@ -40,7 +40,7 @@ read_market_vol(char *filename, int n_strike, double *v_strike, int n_maturity, 
 void save_vol(char *filename, int n_strike, double *v_strike, int n_maturity, double *v_maturity, double **vol) {
     std::ofstream outf(filename, std::ios::out | std::ios::trunc);
 
-    // ios::trunc 사용시 기존 데이터 삭제후 추가  
+    // ios::trunc 사용시 기존 데이터 삭제후 추가
     // ios::app 사용시 데이터 추가 가능
     if (!outf.is_open()) {
         std::cout << filename << "파일을 열 수 없 습니다." << std::endl;
