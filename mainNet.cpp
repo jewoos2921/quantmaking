@@ -405,4 +405,21 @@ void make_cubicspline_interpolation() {
     delete[] zero_rate;
 }
 
+void make_normal_distribution_goodness_fit_test() {
+    srand((unsigned) time(nullptr));
+    unsigned long i;
+    unsigned long nrand;
+    nrand = 1000000;
+
+    double *randnum;
+    randnum = new double[nrand];
+
+    for (i = 0; i < nrand; ++i) {
+        randnum[i] = normdistrand(); // 정규분포령 난수 생성
+    }
+    normal_distribution_goodness_fit_test(nrand, randnum); // 정규분포 적합성 검증
+
+    delete[] randnum;
+}
+
 

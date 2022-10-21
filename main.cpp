@@ -14,5 +14,8 @@ int main() {
 //    make_levenberg_marquardt();
 //    make_linear_interpolation();
 
-    make_cubicspline_interpolation();
+//    make_cubicspline_interpolation();
+
+    make_normal_distribution_goodness_fit_test();
 }
+

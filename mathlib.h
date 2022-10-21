@@ -35,3 +35,8 @@ void set_system_matrix(int n_data, double **Smatrix, double *known, int *x_data,
 double cubicspline_interpolation(int n_data,
                                  int *x_data,
                                  double *y_data, int x);
+
+
+double normdistrand(); // 정규분포 난수 생성
+
+void normal_distribution_goodness_fit_test(unsigned long nrand, double *randnum); // 정규뷴포 적합성 검증

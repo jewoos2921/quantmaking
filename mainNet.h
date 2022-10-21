@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <ctime>
 #include "index.h"
 #include "yield.h"
 #include "option.h"
@@ -29,3 +30,5 @@ void make_levenberg_marquardt();
 void make_linear_interpolation();
 
 void make_cubicspline_interpolation();
+
+void make_normal_distribution_goodness_fit_test();

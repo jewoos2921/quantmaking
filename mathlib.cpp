@@ -5,6 +5,7 @@
 #include "mathlib.h"
 #include <iostream>
 #include <ctgmath>
+#include <random>
 
 void gaussian_elimination(double **Smatrix, double *Known, double *Unknown, int n_eqns) {
 
@@ -341,5 +342,64 @@ double cubicspline_interpolation(int n_data, int *x_data, double *y_data, int x)
     delete[] s_matrix, known_value, unknown_value;
 
     return y;
+
+}
+
+double normdistrand() {
+    double rnd = 0;
+    /* Initialise. Do this once (not for every
+     random number). */
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+
+    /* This is where you define the number generator for double: */
+    std::uniform_real_distribution<double> dis;
+
+    for (int i = 0; i < 12; ++i) {
+        rnd += dis(gen) / static_cast<double>(RAND_MAX);
+    }
+//    rnd -= 6.0;
+    return rnd;
+}
+
+void normal_distribution_goodness_fit_test(unsigned long nrand, double *randnum) {
+    unsigned long i;
+    double mean, stddev;
+    mean = 0.0;
+    for (i = 0; i < nrand; ++i) {
+        mean += randnum[i];
+    }
+
+    mean /= nrand;
+
+    stddev = 0.0;
+    for (i = 0; i < nrand; ++i) {
+        stddev += std::pow((randnum[i] - mean), 2.0);
+    }
+
+    stddev /= (nrand - 1);
+    stddev = std::sqrt(stddev);
+
+    std::cout << "평균 : " << mean << std::endl;
+    std::cout << "표준편차 : " << stddev << std::endl;
+
+    double mu3, mu4, skewness, kurtosis;
+    mu3 = mu4 = 0.0;
+
+    for (i = 0; i < nrand; ++i) {
+        mu3 += std::pow((randnum[i] - mean), 3.0);
+        mu4 += std::pow((randnum[i] - mean), 4.0);
+    }
+
+    skewness = (mu3 / nrand) / std::pow(stddev, 3.0);
+    kurtosis = (mu4 / nrand) / std::pow(stddev, 4.0);
+
+    std::cout << "왜도 : " << skewness << std::endl;
+    std::cout << "첨도 : " << kurtosis << std::endl;
+
+    double jarque_bera;
+    jarque_bera = nrand * (skewness * skewness + std::pow((kurtosis - 3.0), 2.0) / 4.0) / 6.0;
+
+    std::cout << "Jarque-Bera Test: " << jarque_bera << std::endl;
 
 }
