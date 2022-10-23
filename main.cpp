@@ -1,7 +1,12 @@
 #include "mainNet.h"
-
+#include "makeOption.h"
 
 int main() {
+    make_option();
+}
+
+
+void main_1() {
 //    make_gaussian_elimination();
 //    printf("\n");
 //    make_tridiagonal_elimination();
@@ -16,6 +21,8 @@ int main() {
 
 //    make_cubicspline_interpolation();
 
-    make_inverse_normal_cumulative_distribution_function();
+//    make_normdistrand_BoxMuller();
+
+
 }
 

@@ -406,7 +406,7 @@ void make_cubicspline_interpolation() {
 }
 
 void make_normal_distribution_goodness_fit_test() {
-    srand((unsigned) time(nullptr));
+    std::srand(static_cast<unsigned int>(std::time(nullptr))); // Random seed 초기화
     unsigned long i;
     unsigned long nrand;
     nrand = 1000000;
@@ -436,13 +436,30 @@ void make_inverse_normal_cumulative_distribution_function() {
     std::mt19937_64 gen(rd());
 
     /* This is where you define the number generator for double: */
-    std::uniform_real_distribution<double> dis(0, 1);
+    std::uniform_real_distribution<double> dis(0, RAND_MAX);
 
     for (i = 0; i < nrand; ++i) {
         urn = dis(gen) / static_cast<double>(RAND_MAX); // [0, 1] 범위의 균등 분포 난수 생성
         randnum[i] = inverse_normal_cumulative_distribution_function(urn); // 정규분포령 난수 생성
     }
 
+    normal_distribution_goodness_fit_test(nrand, randnum); // 정규분포 적합성 검증
+
+    delete[] randnum;
+}
+
+void make_normdistrand_BoxMuller() {
+    std::srand(static_cast<unsigned int>(std::time(nullptr))); // Random seed 초기화
+    unsigned long i;
+    unsigned long nrand;
+    nrand = 1000000;
+
+    double *randnum;
+    randnum = new double[nrand];
+
+    for (i = 0; i < nrand; ++i) {
+        randnum[i] = normdistrand_BoxMuller(); // 정규분포령 난수 생성
+    }
     normal_distribution_goodness_fit_test(nrand, randnum); // 정규분포 적합성 검증
 
     delete[] randnum;

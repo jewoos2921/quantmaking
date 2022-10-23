@@ -11,5 +11,8 @@ public:
     CYield();
 
     CYield(double riskfree);
+
     ~CYield();
+
+    void get_riskfree();
 };

@@ -12,4 +12,7 @@ add_executable(quantmaking
         nonlinearsolver.cpp
         data.cpp
         mainNet.cpp
+        product.cpp
+        price.cpp
+        makeOption.cpp
         )

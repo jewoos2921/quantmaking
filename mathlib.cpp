@@ -6,6 +6,7 @@
 #include <iostream>
 #include <ctgmath>
 #include <random>
+#include <chrono>
 
 void gaussian_elimination(double **Smatrix, double *Known, double *Unknown, int n_eqns) {
 
@@ -353,18 +354,19 @@ double normdistrand() {
     std::mt19937_64 gen(rd());
 
     /* This is where you define the number generator for double: */
-    std::uniform_real_distribution<double> dis;
+    std::uniform_real_distribution<double> dis(0, RAND_MAX);
 
     for (int i = 0; i < 12; ++i) {
         rnd += dis(gen) / static_cast<double>(RAND_MAX);
     }
-//    rnd -= 6.0;
+    rnd -= 6.0;
     return rnd;
 }
 
 void normal_distribution_goodness_fit_test(unsigned long nrand, double *randnum) {
     unsigned long i;
     double mean, stddev;
+
     mean = 0.0;
     for (i = 0; i < nrand; ++i) {
         mean += randnum[i];
@@ -403,8 +405,6 @@ void normal_distribution_goodness_fit_test(unsigned long nrand, double *randnum)
     std::cout << "Jarque-Bera Test: " << jarque_bera << std::endl;
 
 }
-
-#define EPS 12e-7
 
 double inverse_normal_cumulative_distribution_function(double p) {
     static const double a[] = {
@@ -462,4 +462,79 @@ double inverse_normal_cumulative_distribution_function(double p) {
         return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
                (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + +b[4]) * r + 1);
     }
+}
+
+//double normdistrand_BoxMuller() {
+//    double u1, u2, z1, z2;
+//    static int iset{0};
+//    static double gset;
+//
+//    std::random_device rd;
+//    std::mt19937_64 gen(rd());
+//    std::uniform_real_distribution<double> dis;
+//
+//    if (iset == 0) {
+//        do {
+//            u1 = dis(gen) / static_cast<double>(RAND_MAX);
+//            u2 = dis(gen) / static_cast<double>(RAND_MAX);
+//            z1 = std::sqrt(-2 * std::log(u1)) * std::cos(2 * PI * u2);
+//            z2 = std::sqrt(-2 * std::log(u1)) * std::sin(2 * PI * u2);
+//        } while (u1 == 0.0);
+//        gset = z2; // 다음에 사용하기 위해서
+//        iset = 1;
+//        return z1;
+//    } else {
+//        iset = 0;
+//        return gset; // 저장된 값
+//    }
+//}
+
+double normdistrand_BoxMuller() {
+    double u1, u2, z1, z2;
+    static int iset{0};
+    static double gset;
+
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator(seed);
+//    std::random_device rd;
+//    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(0, RAND_MAX);
+    if (iset == 0) {
+        do {
+            u1 = dis(generator) / static_cast<double>(RAND_MAX);
+            u2 = dis(generator) / static_cast<double>(RAND_MAX);
+            z1 = std::sqrt(-2 * std::log(u1)) * std::cos(2 * PI * u2);
+            z2 = std::sqrt(-2 * std::log(u1)) * std::sin(2 * PI * u2);
+        } while (u1 == 0.0);
+        gset = z2; // 다음에 사용하기 위해서
+        iset = 1;
+        return z1;
+    } else {
+        iset = 0;
+        return gset; // 저장된 값
+    }
+}
+
+double N(double z) {
+    double a1, a2, a3, a4, a5, r, c;
+
+    a1 = 0.31938153;
+    a2 = -0.356563782;
+    a3 = 1.781477937;
+    a4 = -1.821255978;
+    a5 = 1.330274429;
+    r = 0.2316419;
+    c = 1 / std::sqrt(2 * PI);
+
+    if (z > 100.0) { return 1.0; }
+    else if (z < -100.0) { return 0.0; }
+
+
+    double x = std::fabs(z);
+    double k = 1.0 / (1.0 + r * x);
+    double b = c * std::exp((-z * z) / 2.0);
+    double nv = ((((a5 * k + a4) * k + a3) * k + a2) * k + a1) * k;
+    nv = 1.0 - b * nv;
+    if (z < 0.0) { nv = 1.0 - nv; }
+    return nv;
 }

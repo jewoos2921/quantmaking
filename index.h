@@ -12,6 +12,12 @@ public:
 
     ~CIndex();
 
+    void get_spot();
+
+    void get_Vol();
+
+    void get_dividend();
+
 public:
     double m_spot;
     double m_vol;

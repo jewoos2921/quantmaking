@@ -35,3 +35,5 @@ void make_cubicspline_interpolation();
 void make_normal_distribution_goodness_fit_test();
 
 void make_inverse_normal_cumulative_distribution_function();
+
+void make_normdistrand_BoxMuller();
