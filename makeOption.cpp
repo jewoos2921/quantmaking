@@ -127,17 +127,27 @@ void make_option3() {
     CProduct eoption("call", X, T);
     CPrice price;
 
+    printf("\n");
     price.black_scholes_option_price(index, yield, eoption);
     std::cout << "해석해에 의한 옵션가격: " << price.m_price << std::endl;
 
     std::srand(static_cast<unsigned >(std::time(nullptr))); // Random seed 초기화
 
+    printf("\n");
     price.simulation_european_option_price(index, yield, eoption, n_sim, rn);
     std::cout << "시뮬레이션에 의한 옵션가격: " << price.m_price << std::endl;
-
+    printf("\n");
     price.antithetic_variation_simulation_european_option_space(index, yield, eoption, n_sim, rn);
     std::cout << "대조변수기법이 적용된 시물레이션에 의한 옵션가격: " << price.m_price << std::endl;
 
+    printf("\n");
+    price.control_variation_simulation_european_option_space(index, yield, eoption, n_sim, rn);
+    std::cout << "통제변수기법이 적용된 시물레이션에 의한 옵션가격: " << price.m_price << std::endl;
+
+
+    printf("\n");
+    price.importance_sampling_simulation_european_option_space(index, yield, eoption, n_sim, rn);
+    std::cout << "중요표본추출법이 적용된 시물레이션에 의한 옵션가격: " << price.m_price << std::endl;
     delete[] rn;
 
 }

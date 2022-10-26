@@ -909,3 +909,106 @@ void CPrice::antithetic_variation_simulation_european_option_space(CIndex &index
 
 }
 
+void CPrice::control_variation_simulation_european_option_space(CIndex &index, CYield &yield, CProduct &product,
+                                                                unsigned long n_sim, double *rn) {
+    std::string option_type = product.m_option_type;
+    double S = index.m_spot;
+    double X = product.m_strike;
+    double r = yield.m_riskfree;
+    double q = index.m_dividend;
+    double sigma = index.m_vol;
+    double T = product.m_maturity;
+
+    unsigned long i;
+    int iop;
+    double price, mudt, ssqrtdt, meanS, meanP;
+    double *pv, *sv;
+    pv = new double[n_sim];
+    sv = new double[n_sim];
+
+    price = 0.0;
+    meanP = 0.0;
+    meanS = 0.0;
+
+    mudt = (r - q - 0.5 * sigma * sigma) * T;
+    ssqrtdt = sigma * std::sqrt(T);
+    iop = -1;
+
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    for (i = 0; i < n_sim; ++i) {
+        sv[i] = S * std::exp(mudt + ssqrtdt * rn[i]); // 주가생성
+        pv[i] = MAX(iop * (sv[i] - X), 0.0); // 만기 payoff
+        meanS += sv[i];
+        meanP += pv[i];
+    }
+
+    meanS /= n_sim;
+    meanP /= n_sim;
+
+    double variance, covariance, beta, ES;
+    variance = covariance = 0.0;
+    for (i = 0; i < n_sim; ++i) {
+        variance += (sv[i] - meanS) * (sv[i] - meanS);
+        covariance += (sv[i] - meanS) * (pv[i] - meanP);
+    }
+
+    variance /= (n_sim - 1);
+    covariance /= (n_sim - 1);
+
+    beta = covariance / variance;
+    ES = S * std::exp((r - q) * T);
+
+    for (i = 0; i < n_sim; ++i) {
+        pv[i] = pv[i] + beta * (ES - sv[i]);
+        price += pv[i];
+    }
+
+    m_price = (price / n_sim) * std::exp(-r * T); // 만기 payoff의 평균을 현가
+    mean_stddev_error(n_sim, pv);
+
+    delete[] pv;
+    delete[] sv;
+}
+
+void CPrice::importance_sampling_simulation_european_option_space(CIndex &index, CYield &yield, CProduct &product,
+                                                                  unsigned long n_sim, double *rn) {
+    std::string option_type = product.m_option_type;
+    double S = index.m_spot;
+    double X = product.m_strike;
+    double r = yield.m_riskfree;
+    double q = index.m_dividend;
+    double sigma = index.m_vol;
+    double T = product.m_maturity;
+
+    unsigned long i;
+    int iop;
+    double St, price, mudt, ssqrtdt, c, likeR;
+    double *pv;
+
+    pv = new double[n_sim];
+    price = 0.0;
+    c = 0.4; // 0.1~0.7에서 선택
+    mudt = (r + c - q - 0.5 * sigma * sigma) * T;
+    ssqrtdt = sigma * std::sqrt(T);
+    iop = -1;
+
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    for (i = 0; i < n_sim; ++i) {
+        St = S * std::exp(mudt + ssqrtdt * rn[i]); // 주가생성
+        likeR = std::exp(-0.5 * c * c * T / (sigma * sigma) - c * rn[i] / sigma); // likelihood ratio
+
+        pv[i] = MAX(iop * (St - X), 0.0) * likeR; // 만기 payoff
+        price += pv[i];
+    }
+
+    m_price = (price / n_sim) * std::exp(-r * T); // 만기 payoff의 평균을 현가
+    mean_stddev_error(n_sim, pv);
+    delete[] pv;
+}
+

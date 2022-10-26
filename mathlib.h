@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#define _CRT_SECURE_NO_DEPRECATE
+#define CRT_SECURE_NO_DEPRECATE
 
 void gaussian_elimination(double **Smatrix,
                           double *Known,

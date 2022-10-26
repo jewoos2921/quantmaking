@@ -69,6 +69,18 @@ public:
                                                                unsigned long n_sim,
                                                                double *rn);
 
+    void control_variation_simulation_european_option_space(CIndex &index,
+                                                            CYield &yield,
+                                                            CProduct &product,
+                                                            unsigned long n_sim,
+                                                            double *rn);
+
+    void importance_sampling_simulation_european_option_space(CIndex &index,
+                                                              CYield &yield,
+                                                              CProduct &product,
+                                                              unsigned long n_sim,
+                                                              double *rn);
+
 public:
     double m_price;
 
