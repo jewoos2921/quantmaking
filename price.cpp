@@ -357,3 +357,555 @@ CPrice::implicit_fdm_european_option_price(CIndex &index, CYield &yield, CProduc
     delete[] unknown_value;
 }
 
+void CPrice::spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, CProduct &product) {
+    std::string option_type = product.m_option_type;
+    double rho = product.m_correlation;
+    double X = product.m_strike;
+    double T = product.m_maturity;
+    double S1 = index1.m_spot;
+    double q1 = index1.m_dividend;
+    double sigma1 = index1.m_vol;
+
+    double S2 = index2.m_spot;
+    double q2 = index2.m_dividend;
+    double sigma2 = index2.m_vol;
+    double r = yield.m_riskfree;
+
+    int iop;
+    double F, S, sigma, d1, d2;
+
+    F = S2 * std::exp(-q2 * T) / (S2 * std::exp(-q2 * T) + X * std::exp(-r * T));
+    sigma = std::sqrt(sigma1 * sigma1 + std::pow((sigma2 * F), 2) - 2 * rho * sigma1 * sigma2 * F);
+    S = S1 * std::exp(-q1 * T) / (S2 * std::exp(-q2 * T) + X * std::exp(-r * T));
+
+    d1 = (std::log(S) + 0.5 * sigma * sigma * T) / (sigma * std::sqrt(T));
+    d2 = d1 - sigma * std::sqrt(T);
+
+    iop = -1;
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+    m_price = (S2 * std::exp(-q2 * T)
+               + X * std::exp(-r * T)
+                 * iop *
+                 (S * N(iop * d1) - N(iop * d2)));
+}
+
+void
+CPrice::simulation_spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, CProduct &product, int n_sim) {
+    std::string option_type = product.m_option_type;
+    double rho = product.m_correlation;
+    double X = product.m_strike;
+    double T = product.m_maturity;
+    double S1 = index1.m_spot;
+    double q1 = index1.m_dividend;
+    double sigma1 = index1.m_vol;
+
+    double S2 = index2.m_spot;
+    double q2 = index2.m_dividend;
+    double sigma2 = index2.m_vol;
+    double r = yield.m_riskfree;
+
+
+    int i, iop;
+    double rv1, rv2, epsilon1, epsilon2;
+    double St1, St2, price, mu1t, mu2t, s1sqrtt, s2sqrtt, sqrtrho;
+
+
+    std::srand(static_cast<unsigned >(std::time(nullptr))); // Random seed 초기화
+
+    price = 0.0;
+    mu1t = (r - q1 - 0.5 * sigma1 * sigma1) * T;
+    mu2t = (r - q2 - 0.5 * sigma2 * sigma2) * T;
+    s1sqrtt = sigma1 * std::sqrt(T);
+    s2sqrtt = sigma2 * std::sqrt(T);
+    sqrtrho = std::sqrt(1.0 - rho * rho);
+
+    iop = -1;
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    for (i = 0; i < n_sim; ++i) {
+        rv1 = normdistrand_BoxMuller();
+        rv2 = normdistrand_BoxMuller();
+
+        epsilon1 = rv1;
+        epsilon2 = rho * rv1 + sqrtrho * rv2;
+
+        St1 = S1 * std::exp(mu1t + s1sqrtt * epsilon1); // 주가 생성
+        St2 = S2 * std::exp(mu2t + s2sqrtt * epsilon2); // 주가 생성
+
+        price += MAX(iop * ((St1 - St2) - X), 0.0); // 만기 payoff
+    }
+
+    m_price = (price / n_sim) * std::exp(-r * T); // 만기 payoff의 평균을 현가
+}
+
+void CPrice::binomial_tree_spread_option_price(CIndex &index1, CIndex &index2,
+                                               CYield &yield, CProduct &product,
+                                               int n_step) {
+    std::string option_type = product.m_option_type;
+    double rho = product.m_correlation;
+    double X = product.m_strike;
+    double T = product.m_maturity;
+    double S1 = index1.m_spot;
+    double q1 = index1.m_dividend;
+    double sigma1 = index1.m_vol;
+
+    double S2 = index2.m_spot;
+    double q2 = index2.m_dividend;
+    double sigma2 = index2.m_vol;
+    double r = yield.m_riskfree;
+
+    int i, k, j, iop;
+
+    double dx1, dx2, nu1, nu2, p1, p2, p3, p4;
+    double dfactor, dt;
+
+    dt = T / n_step;
+    dx1 = sigma1 * std::sqrt(dt);
+    dx2 = sigma2 * std::sqrt(dt);
+    nu1 = r - q1 - 0.5 * sigma1 * sigma1;
+    nu2 = r - q2 - 0.5 * sigma2 * sigma2;
+
+    double *Sp1, *Sp2, **CV;
+    Sp1 = new double[n_step + 1];
+    Sp2 = new double[n_step + 1];
+    CV = new double *[n_step + 1];
+
+    for (i = 0; i < n_step + 1; ++i) {
+        CV[i] = new double[n_step + 1];
+    }
+
+    // Tree 주가 생성
+    Sp1[0] = S1 * std::exp(n_step * dx1);
+    Sp2[0] = S2 * std::exp(n_step * dx2);
+
+    for (i = 1; i <= n_step; ++i) {
+        Sp1[i] = Sp1[i - 1] * std::exp(-2 * dx1);
+        Sp2[i] = Sp2[i - 1] * std::exp(-2 * dx2);
+    }
+
+    p1 = (dx1 * dx2 + (dx2 * nu1 + dx1 * nu2 + rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 up, d2 up
+    p2 = (dx1 * dx2 + (dx2 * nu1 - dx1 * nu2 - rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 up, d2 down
+    p3 = (dx1 * dx2 - (dx2 * nu1 + dx1 * nu2 - rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 down, d2 down
+    p4 = (dx1 * dx2 - (dx2 * nu1 - dx1 * nu2 + rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 down, d2 up
+
+    iop = -1;
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    // 만기시점 옵션 payoff
+    for (i = 0; i <= n_step; ++i) {
+        for (j = 0; j <= n_step; ++j) {
+            CV[i][j] = MAX(iop * ((Sp1[i] - Sp2[j]) - X), 0.0);
+        }
+    }
+
+    dfactor = std::exp(-r * dt);
+
+    // Tree의 만기에서부터 Backward Induction 실행하여 현재가치 계산
+    for (i = n_step - 1; i >= 0; --i) {
+        for (j = 0; j <= i; ++j) {
+            for (k = 0; k <= i; ++k) {
+                CV[j][k] =
+                        (p1 * CV[j][k] + p2 * CV[j][k + 1] + p3 * CV[j + 1][k + 1] + p4 * CV[j + 1][k]) * dfactor;
+            }
+        }
+    }
+
+    m_price = CV[0][0]; // 옵션의 현재가치
+
+    for (i = 0; i < n_step + 1; ++i) {
+        delete[] CV[i];
+    }
+
+    delete[] CV;
+    delete[] Sp1;
+    delete[] Sp2;
+}
+
+void CPrice::trinomial_tree_spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, CProduct &product,
+                                                int n_step) {
+    std::string option_type = product.m_option_type;
+    double rho = product.m_correlation;
+    double X = product.m_strike;
+    double T = product.m_maturity;
+    double S1 = index1.m_spot;
+    double q1 = index1.m_dividend;
+    double sigma1 = index1.m_vol;
+
+    double S2 = index2.m_spot;
+    double q2 = index2.m_dividend;
+    double sigma2 = index2.m_vol;
+    double r = yield.m_riskfree;
+
+    int i, k, j, iop, nstep;
+
+    double dx1, dx2, nu1, nu2, p1, p2, p3, p4, p5;
+    double dfactor, dt;
+
+    dt = T / n_step;
+    dx1 = sigma1 * std::sqrt(3.0 * dt);
+    dx2 = sigma2 * std::sqrt(3.0 * dt);
+    nu1 = r - q1 - 0.5 * sigma1 * sigma1;
+    nu2 = r - q2 - 0.5 * sigma2 * sigma2;
+    nstep = 2 * n_step + 1;
+
+    double *Sp1, *Sp2, **CV;
+    Sp1 = new double[nstep];
+    Sp2 = new double[nstep];
+    CV = new double *[nstep];
+
+    for (i = 0; i < nstep; ++i) {
+        CV[i] = new double[nstep];
+    }
+
+    // Tree 주가 생성
+    Sp1[0] = S1 * std::exp(n_step * dx1);
+    Sp2[0] = S2 * std::exp(n_step * dx2);
+    for (i = 0; i <= n_step; ++i) {
+        Sp1[i] = Sp1[i - 1] * std::exp(dx1);
+        Sp2[i] = Sp2[i - 1] * std::exp(dx2);
+    }
+
+    double f1, f2, f3, f4, f5, f6;
+    f1 = nu1 * dt / dx1;
+    f2 = nu2 * dt / dx2;
+    f3 = sigma1 * sigma1 * dt / (dx1 * dx1);
+    f4 = nu1 * nu1 * dt * dt / (dx1 * dx1);
+    f5 = rho * sigma1 * sigma2 * dt / (dx1 * dx2);
+    f6 = nu1 * nu2 * dt * dt / (dx1 * dx2);
+
+
+    p1 = 0.25 * (f1 + f2 + f3 + f4 + f5 + f5); // s1 up, s2 up
+    p2 = 0.25 * (f1 - f2 + f3 + f4 - f5 - f5); // s1 up, s2 down
+    p3 = 0.25 * (-f1 - f2 + f3 + f4 + f5 + f5); // s1 down, s2 down
+    p4 = 0.25 * (-f1 + f2 + f3 + f4 - f5 - f5); // s1 down, s2 up
+    p5 = 1.0 - f3 - f4;                         // s1 middle, s2 middle
+
+    iop = -1;
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    // 만기시점 옵션 payoff
+    for (i = 0; i < nstep; ++i) {
+        for (j = 0; j < nstep; ++j) {
+            CV[i][j] = MAX(iop * ((Sp1[i] - Sp2[j]) - X), 0.0);
+        }
+    }
+
+    dfactor = std::exp(-r * dt);
+
+    // Tree의 만기에서부터 Backward Induction 실행하여 현재가치 계산
+    for (i = n_step - 1; i >= 0; --i) {
+        for (j = 0; j < 2 * i + 1; ++j) {
+            for (k = 0; k < 2 * i + 1; ++k) {
+                CV[j][k] = (p1 * CV[j][k] + p2 * CV[j][k + 2] +
+                            p3 * CV[j + 2][k + 2] + p4 * CV[j + 2][k]
+                            + p5 * CV[j + 1][k + 1]) * dfactor;
+            }
+        }
+    }
+
+    m_price = CV[0][0];
+    for (i = 0; i < nstep; ++i) {
+        delete[] CV[i];
+    }
+
+    delete[] CV;
+    delete[] Sp1;
+    delete[] Sp2;
+
+}
+
+void
+CPrice::implicit_fdm_spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, CProduct &product,
+                                         int n_step, int n_spot) {
+    std::string option_type = product.m_option_type;
+    double rho = product.m_correlation;
+    double X = product.m_strike;
+    double T = product.m_maturity;
+    double S1 = index1.m_spot;
+    double q1 = index1.m_dividend;
+    double sigma1 = index1.m_vol;
+
+    double S2 = index2.m_spot;
+    double q2 = index2.m_dividend;
+    double sigma2 = index2.m_vol;
+    double r = yield.m_riskfree;
+
+    int i, k, j, iop, t;
+    double *Sp1, *Sp2, **oldCV, **newCV;
+
+    if ((n_spot % 2) == 0) {
+        n_spot = n_spot + 1;
+    }
+
+    Sp1 = new double[n_spot];
+    Sp2 = new double[n_spot];
+    oldCV = new double *[n_spot];
+    newCV = new double *[n_spot];
+
+    for (i = 0; i < n_spot + 1; ++i) {
+        oldCV[i] = new double[n_spot];
+//        newCV[i] = new double[n_spot];
+    }
+    for (i = 0; i < n_spot + 1; ++i) {
+//        oldCV[i] = new double[n_spot];
+        newCV[i] = new double[n_spot];
+    }
+
+    double dt, cl, mu1, mu2, dx1, dx2, edx1, edx2;
+
+    cl = 4.0;
+    mu1 = r - q1 - 0.5 * sigma1 * sigma1;
+    mu2 = r - q2 - 0.5 * sigma2 * sigma2;
+    dt = T / n_step;
+
+    dx1 = sigma1 * std::sqrt(3.0 * dt);
+    dx2 = sigma2 * std::sqrt(3.0 * dt);
+
+    edx1 = std::exp(dx1);
+    edx2 = std::exp(dx2);
+
+    Sp1[0] = S1 * std::exp((n_spot - 1) / 2 * dx1); // 기초 자산의 노드별 가격 설정
+    for (i = 1; i < n_spot; ++i) {
+        Sp1[i] = Sp1[i - 1] / edx1;
+    }
+    Sp1[(n_spot - 1) / 2] = S1;
+
+
+    Sp2[0] = S2 * std::exp((n_spot - 1) / 2 * dx2); // 기초 자산의 노드별 가격 설정
+    for (i = 1; i < n_spot; ++i) {
+        Sp2[i] = Sp2[i - 1] / edx2;
+    }
+    Sp2[(n_spot - 1) / 2] = S2;
+
+    iop = -1;
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    double pu1, pm1, pd1, pmm1, pu2, pm2, pd2, pmm2;
+
+    pu1 = -0.5 * (mu1 / dx1 + sigma1 * sigma1 / (dx1 * dx1)) * dt;
+    pm1 = 1.0 + sigma1 * sigma1 * dt / (dx1 * dx1) + 0.5 * r * dt;
+    pd1 = 0.5 * (mu1 / dx1 - sigma1 * sigma1 / (dx1 * dx1)) * dt;
+    pmm1 = 0.125 * rho * sigma1 * sigma2 * dt / (dx1 * dx2);
+
+
+    pu2 = -0.5 * (mu2 / dx2 + sigma2 * sigma2 / (dx2 * dx2)) * dt;
+    pm2 = 1.0 + sigma2 * sigma2 * dt / (dx2 * dx2) + 0.5 * r * dt;
+    pd2 = 0.5 * (mu2 / dx2 - sigma2 * sigma2 / (dx2 * dx2)) * dt;
+    pmm2 = pmm1;
+
+    // n_spot 개 미지수중에 2개의 경계조선을 적용하므로 실제 미지수는 n_spot-2개 가 된다.
+    double **smatrix1, **smatrix2, **tmp, *known_value, *unknown_value;
+    smatrix1 = new double *[n_spot - 2];  // row create
+    smatrix2 = new double *[n_spot - 2];  // row create
+    tmp = new double *[n_spot - 2]; // row create
+    known_value = new double[n_spot - 2];
+    unknown_value = new double[n_spot - 2];
+
+    for (i = 0; i < n_spot - 2; ++i) {
+        smatrix1[i] = new double[n_spot - 2]; // column create
+        smatrix2[i] = new double[n_spot - 2]; // column create
+        tmp[i] = new double[n_spot - 2]; // column create
+    }
+
+
+    for (i = 0; i < n_spot - 2; ++i) {
+        for (j = 0; j < n_spot - 2; ++j) {
+            smatrix1[i][j] = 0.0;
+            smatrix2[i][j] = 0.0;
+        }
+    }
+
+
+    // 0~nnodel-3는 nnodel-2 개
+    // 1 자산이 미지수 이므로 1자산의 격자수
+    smatrix1[0][0] = pm1 + 2.0 * pu1; // Gamma = 0 경계 조건
+    smatrix1[0][1] = pd1 - pu1; // Gamma = 0 경계 조건
+
+    for (i = 1; i < n_spot - 3; ++i) {
+        smatrix1[i][i - 1] = pu1;
+        smatrix1[i][i] = pm1;
+        smatrix1[i][i + 1] = pd1;
+    }
+    smatrix1[n_spot - 3][n_spot - 4] = pu1 - pd1;// Gamma = 0 경계 조건
+    smatrix1[n_spot - 3][n_spot - 3] = pm1 + 2.0 * pd1;// Gamma = 0 경계 조건
+
+    // 2 자산이 미지수 이므로 2자산의 격자수
+    smatrix2[0][0] = pm2 + 2.0 * pu2; // Gamma = 0 경계 조건
+    smatrix2[0][1] = pd2 - pu2; // Gamma = 0 경계 조건
+
+    for (i = 1; i < n_spot - 3; ++i) {
+        smatrix2[i][i - 1] = pu2;
+        smatrix2[i][i] = pm2;
+        smatrix2[i][i + 1] = pd2;
+    }
+
+    smatrix2[n_spot - 3][n_spot - 4] = pu2 - pd2;// Gamma = 0 경계 조건
+    smatrix2[n_spot - 3][n_spot - 3] = pm2 + 2.0 * pd2;// Gamma = 0 경계 조건
+
+
+    // 만기시점에서의 경계조건 부여
+    // 만기시점 옵션
+    for (i = 0; i < n_spot; ++i) {
+        for (j = 0; j < n_spot; ++j) {
+            oldCV[i][j] = MAX(iop * ((Sp1[i] - Sp2[j]) - X), 0.0);
+        }
+    }
+
+    // 만기에서의 Backward Induction 실행하여 현재가치 계산
+    for (t = n_step - 1; t >= 0; --t) {
+        // 1st phase
+        for (i = 1; i < n_spot - 1; ++i) {
+            for (j = 0; j < n_spot - 2; ++j) {
+                for (k = 0; k < n_spot - 2; ++k) {
+                    tmp[j][k] = smatrix1[j][k];
+                }
+                known_value[j] = oldCV[j + 1][i] + pmm1 * (oldCV[j][i - 1] + oldCV[j + 2][i + 1]
+                                                           - oldCV[j][i + 1] - oldCV[j + 2][i - 1]);
+            }
+            tridiagonal_elimination(tmp, known_value, unknown_value, n_spot - 2);
+            for (j = 0; j < n_spot - 2; ++j) {
+                newCV[j + 1][i] = unknown_value[i];
+            }
+        }
+        // 경계 조선을 적용한 값 대입
+        for (i = 0; i < n_spot; ++i) {
+            newCV[i][0] = (2.0 * newCV[i][1] - newCV[i][2]);
+            newCV[i][n_spot - 1] = (2.0 * newCV[i][n_spot - 2] - newCV[i][n_spot - 3]);
+        }
+
+        // 2nd phase
+        for (i = 1; i < n_spot - 1; ++i) {
+            for (j = 0; j < n_spot - 2; ++j) {
+                for (k = 0; k < n_spot - 2; ++k) {
+                    tmp[j][k] = smatrix2[j][k];
+                }
+                known_value[j] = newCV[i][j + 1] + pmm2 * (newCV[i - 1][j] + newCV[i + 1][j + 2]
+                                                           - newCV[i + 1][j] - newCV[i - 1][j + 2]);
+            }
+            tridiagonal_elimination(tmp, known_value, unknown_value, n_spot - 2);
+            for (j = 0; j < n_spot - 2; ++j) {
+                oldCV[i][j + 1] = unknown_value[j];
+            }
+        }
+
+        for (i = 0; i < n_spot; ++i) {
+            oldCV[0][i] = (2.0 * oldCV[1][i] - oldCV[2][i]);
+            oldCV[n_spot - 1][i] = (2.0 * oldCV[n_spot - 2][i] - oldCV[n_spot - 3][i]);
+        }
+    }
+
+    m_price = oldCV[(n_spot - 1) / 2][(n_spot - 1) / 2];
+    for (i = 0; i < n_spot; ++i) {
+        delete[] oldCV[i];
+        delete[] newCV[i];
+    }
+
+    delete[]newCV;
+    delete[]oldCV;
+    delete[]Sp2;
+    delete[]Sp1;
+
+    for (i = 0; i < n_spot - 2; ++i) {
+        delete[] smatrix1[i];
+        delete[] smatrix2[i];
+        delete[] tmp[i];
+    }
+
+    delete[] smatrix1;
+    delete[] smatrix2;
+    delete[] tmp;
+    delete[] known_value;
+    delete[] unknown_value;
+}
+
+void CPrice::simulation_european_option_price(CIndex &index, CYield &yield, CProduct &product, unsigned long n_sim,
+                                              double *rn) {
+    std::string option_type = product.m_option_type;
+    double S = index.m_spot;
+    double X = product.m_strike;
+    double r = yield.m_riskfree;
+    double q = index.m_dividend;
+    double sigma = index.m_vol;
+    double T = product.m_maturity;
+
+    unsigned long i;
+    int iop;
+    double St, price, mudt, ssqrtdt;
+    double *pv;
+    pv = new double[n_sim];
+
+    price = 0.0;
+    mudt = (r - q - 0.5 * sigma * sigma) * T;
+    ssqrtdt = sigma * std::sqrt(T);
+    iop = -1;
+
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    for (i = 0; i < n_sim; ++i) {
+        rn[i] = normdistrand_BoxMuller();
+        St = S * std::exp(mudt + ssqrtdt * rn[i]); // 주가생성
+        pv[i] = MAX(iop * (St - X), 0.0); // 만기 payoff
+        price += pv[i];
+    }
+
+    m_price = (price / n_sim) * std::exp(-r * T); // 만기 payoff의 평균을 현가
+    mean_stddev_error(n_sim, pv);
+
+    delete[] pv;
+}
+
+void CPrice::antithetic_variation_simulation_european_option_space(CIndex &index, CYield &yield, CProduct &product,
+                                                                   unsigned long n_sim, double *rn) {
+    std::string option_type = product.m_option_type;
+    double S = index.m_spot;
+    double X = product.m_strike;
+    double r = yield.m_riskfree;
+    double q = index.m_dividend;
+    double sigma = index.m_vol;
+    double T = product.m_maturity;
+
+    unsigned long i;
+    int iop;
+    double St, price, mudt, ssqrtdt, prn, nrn;
+    double *pv;
+
+    pv = new double[n_sim];
+    price = 0.0;
+    mudt = (r - q - 0.5 * sigma * sigma) * T;
+    ssqrtdt = sigma * std::sqrt(T);
+    iop = -1;
+
+    if (option_type == "Call" || option_type == "call") {
+        iop = 1;
+    }
+
+    for (i = 0; i < n_sim; ++i) {
+        St = S * std::exp(mudt + ssqrtdt * rn[i]); // 주가생성
+        prn = MAX(iop * (St - X), 0.0); // 만기 payoff
+
+        St = S * std::exp(mudt - ssqrtdt * rn[i]); // 주가생성
+        nrn = MAX(iop * (St - X), 0.0); // 만기 payoff
+
+        pv[i] = (prn + nrn) / 2.0;
+        price += pv[i];
+    }
+
+    m_price = (price / n_sim) * std::exp(-r * T); // 만기 payoff의 평균을 현가
+    mean_stddev_error(n_sim, pv);
+
+    delete[] pv;
+
+}
+

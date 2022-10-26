@@ -15,7 +15,7 @@ void tridiagonal_elimination(double **Smatrix,
                              double *Unknown,
                              int n_eqns);
 
-void cholesky_decomposition(double **L, double **A, int n_col);
+void cholesky_decomposition(double **L, double **A, int n_col); // A: in, L: out, col: 배열 크기
 
 void cholesky_elimination(double **L, double *UV, double *KV, int n_col);
 
@@ -55,4 +55,5 @@ double normdistrand_BoxMuller();  // 정규분포 난수 생성
 
 double N(double z);
 
-
+// 분산 검증
+void mean_stddev_error(unsigned long nrand, double *value);

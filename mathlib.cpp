@@ -538,3 +538,24 @@ double N(double z) {
     if (z < 0.0) { nv = 1.0 - nv; }
     return nv;
 }
+
+void mean_stddev_error(unsigned long nrand, double *value) {
+    unsigned long i;
+    double mean, stddev;
+    mean = 0.0;
+    for (i = 0; i < nrand; ++i) {
+        mean += value[i];
+    }
+    mean /= nrand;
+
+    stddev = 0.0;
+    for (i = 0; i < nrand; ++i) {
+        stddev += std::pow((value[i] - mean), 2.0);
+    }
+    stddev /= (nrand - 1);
+    stddev = std::sqrt(stddev);
+
+    std::cout<<"평균: "<<mean <<std::endl;
+    std::cout << "표준 편차: " << stddev << std::endl;
+    std::cout << "표준 오차: " << stddev / std::sqrt(static_cast<double>(nrand)) << std::endl;
+}

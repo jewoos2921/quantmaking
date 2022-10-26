@@ -5,3 +5,7 @@
 #pragma once
 
 void make_option();
+
+void make_option2();
+
+void make_option3();
