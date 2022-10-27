@@ -57,3 +57,9 @@ double N(double z);
 
 // 분산 검증
 void mean_stddev_error(unsigned long nrand, double *value);
+
+// 준난수 생성
+double *halton_sequence(unsigned num, unsigned prime_number);
+
+
+double halton_sequence_(int num, int prime_number);

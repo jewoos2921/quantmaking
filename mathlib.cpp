@@ -499,6 +499,7 @@ double normdistrand_BoxMuller() {
 //    std::random_device rd;
 //    std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dis(0, RAND_MAX);
+
     if (iset == 0) {
         do {
             u1 = dis(generator) / static_cast<double>(RAND_MAX);
@@ -555,7 +556,52 @@ void mean_stddev_error(unsigned long nrand, double *value) {
     stddev /= (nrand - 1);
     stddev = std::sqrt(stddev);
 
-    std::cout<<"평균: "<<mean <<std::endl;
+    std::cout << "평균: " << mean << std::endl;
     std::cout << "표준 편차: " << stddev << std::endl;
     std::cout << "표준 오차: " << stddev / std::sqrt(static_cast<double>(nrand)) << std::endl;
+}
+
+double *halton_sequence(unsigned int num, unsigned int prime_number) {
+    // 홀튼 수열 생성을 위하여 Brandimarte(2002), P236을 C++ 코드로 변환
+    int dnum, digitnumber;
+    unsigned i;
+    double invprime;
+    double haltonnumber;
+    double *POINTS;
+    POINTS = new double[num];
+
+    for (i = 0; i < num; ++i) {
+        invprime = 1.0 / static_cast<double>(prime_number);
+        dnum = i;
+        haltonnumber = 0.0;
+        do {
+            digitnumber = dnum % prime_number;
+            haltonnumber += digitnumber * invprime;
+            dnum = (dnum - digitnumber) / prime_number;
+            invprime /= static_cast<double>(prime_number);
+        } while (dnum > 0);
+
+        POINTS[i] = haltonnumber;
+    }
+
+    return POINTS;
+}
+
+double halton_sequence_(int num, int prime_number) {
+    // 홀튼 수열 생성을 위하여 Brandimarte(2002), P236을 C++ 코드로 변환
+    int dnum, digitnumber;
+    double invprime, haltonnumber;
+
+    invprime = 1.0 / static_cast<double>(prime_number);
+    dnum = num;
+    haltonnumber = 0.0;
+
+    do {
+        digitnumber = dnum % prime_number;
+        haltonnumber += digitnumber * invprime;
+        dnum = (dnum - digitnumber) / prime_number;
+        invprime /= static_cast<double>(prime_number);
+    } while (dnum > 0);
+
+    return haltonnumber;
 }

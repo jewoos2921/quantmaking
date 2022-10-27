@@ -15,4 +15,5 @@ add_executable(quantmaking
         product.cpp
         price.cpp
         makeOption.cpp
+        sobol.cpp
         )

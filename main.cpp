@@ -2,7 +2,7 @@
 #include "makeOption.h"
 
 int main() {
-    make_option3();
+    make_option5();
 }
 
 

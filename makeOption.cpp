@@ -9,6 +9,7 @@
 #include "product.h"
 #include "price.h"
 #include "makeOption.h"
+#include "sobol.h"
 
 void make_option() {
     double S, X, r, q, sigma, T;
@@ -61,12 +62,13 @@ void make_option2() {
     unsigned long n_sim;
 
 
-    S1 = 100.0; // 기초 자산1 가격
+    S1 = 110.0; // 기초 자산1 가격
     S2 = 100.0; // 기초 자산2 가격
     X = 110.0; // 행사 가격
     r = 0.05; // risk free rate
     q1 = 0.01; // 기초 자산1 dividend rate
     q2 = 0.015; // 기초 자산2 dividend rate
+
     sigma1 = 0.2; // 기초 자산1 변동성
     sigma2 = 0.3; // 기초 자산2 변동성
     rho = 0.5; // 기초 자산1과 기초 자산2의 상관계수
@@ -82,6 +84,7 @@ void make_option2() {
     CYield yield(r);
 
     CProduct soption("call", X, T);
+
     soption.m_correlation = rho;
 
     CPrice price;
@@ -150,5 +153,38 @@ void make_option3() {
     std::cout << "중요표본추출법이 적용된 시물레이션에 의한 옵션가격: " << price.m_price << std::endl;
     delete[] rn;
 
+}
+
+void make_option4() {
+    unsigned i, ns;
+    double *rn;
+    ns = 1000000;
+    rn = new double[ns];
+
+    double *haltons = halton_sequence(ns, 2); // halton sequence를 이용한 난수 생성
+
+    // 평균0, 분산1 인 정규분포형 난수 생성
+    for (i = 0; i < ns; ++i) {
+        rn[i] = inverse_normal_cumulative_distribution_function(haltons[i]);
+    }
+
+    normal_distribution_goodness_fit_test(ns, rn); // 정규 분포 적합성 검증
+
+    delete[] rn;
+    delete[] haltons;
+}
+
+void make_option5() {
+    unsigned i, ns;
+    double *rn;
+    ns = 1000000;
+    rn = new double[ns];
+    double *sobol = sobol_points(ns);
+    for (i = 0; i < ns; ++i) {
+        rn[i] = inverse_normal_cumulative_distribution_function(sobol[i]);
+    }
+    normal_distribution_goodness_fit_test(ns, rn);
+    delete[]sobol;
+    delete[]rn;
 }
 

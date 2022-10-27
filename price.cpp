@@ -357,11 +357,15 @@ CPrice::implicit_fdm_european_option_price(CIndex &index, CYield &yield, CProduc
     delete[] unknown_value;
 }
 
+/*
+ * 스프레드 옵션
+*/
 void CPrice::spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, CProduct &product) {
     std::string option_type = product.m_option_type;
     double rho = product.m_correlation;
     double X = product.m_strike;
     double T = product.m_maturity;
+
     double S1 = index1.m_spot;
     double q1 = index1.m_dividend;
     double sigma1 = index1.m_vol;
@@ -374,9 +378,14 @@ void CPrice::spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, 
     int iop;
     double F, S, sigma, d1, d2;
 
-    F = S2 * std::exp(-q2 * T) / (S2 * std::exp(-q2 * T) + X * std::exp(-r * T));
-    sigma = std::sqrt(sigma1 * sigma1 + std::pow((sigma2 * F), 2) - 2 * rho * sigma1 * sigma2 * F);
-    S = S1 * std::exp(-q1 * T) / (S2 * std::exp(-q2 * T) + X * std::exp(-r * T));
+    F = S2 * std::exp(-q2 * T) / (S2 * std::exp(-q2 * T)
+                                  + X * std::exp(-r * T));
+
+    sigma = std::sqrt(sigma1 * sigma1 + std::pow((sigma2 * F), 2)
+                      - 2 * rho * sigma1 * sigma2 * F);
+
+    S = S1 * std::exp(-q1 * T) / (S2 * std::exp(-q2 * T)
+                                  + X * std::exp(-r * T));
 
     d1 = (std::log(S) + 0.5 * sigma * sigma * T) / (sigma * std::sqrt(T));
     d2 = d1 - sigma * std::sqrt(T);
@@ -385,6 +394,7 @@ void CPrice::spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, 
     if (option_type == "Call" || option_type == "call") {
         iop = 1;
     }
+
     m_price = (S2 * std::exp(-q2 * T)
                + X * std::exp(-r * T)
                  * iop *
@@ -393,6 +403,7 @@ void CPrice::spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, 
 
 void
 CPrice::simulation_spread_option_price(CIndex &index1, CIndex &index2, CYield &yield, CProduct &product, int n_sim) {
+
     std::string option_type = product.m_option_type;
     double rho = product.m_correlation;
     double X = product.m_strike;
@@ -409,14 +420,17 @@ CPrice::simulation_spread_option_price(CIndex &index1, CIndex &index2, CYield &y
 
     int i, iop;
     double rv1, rv2, epsilon1, epsilon2;
-    double St1, St2, price, mu1t, mu2t, s1sqrtt, s2sqrtt, sqrtrho;
+    double St1, St2, price, mu1t, mu2t;
+    double s1sqrtt, s2sqrtt, sqrtrho;
 
 
     std::srand(static_cast<unsigned >(std::time(nullptr))); // Random seed 초기화
 
     price = 0.0;
+
     mu1t = (r - q1 - 0.5 * sigma1 * sigma1) * T;
     mu2t = (r - q2 - 0.5 * sigma2 * sigma2) * T;
+
     s1sqrtt = sigma1 * std::sqrt(T);
     s2sqrtt = sigma2 * std::sqrt(T);
     sqrtrho = std::sqrt(1.0 - rho * rho);
@@ -460,16 +474,19 @@ void CPrice::binomial_tree_spread_option_price(CIndex &index1, CIndex &index2,
 
     int i, k, j, iop;
 
-    double dx1, dx2, nu1, nu2, p1, p2, p3, p4;
+    double dx1, dx2, nu1, nu2;
+    double p1, p2, p3, p4;
     double dfactor, dt;
 
     dt = T / n_step;
     dx1 = sigma1 * std::sqrt(dt);
     dx2 = sigma2 * std::sqrt(dt);
+
     nu1 = r - q1 - 0.5 * sigma1 * sigma1;
     nu2 = r - q2 - 0.5 * sigma2 * sigma2;
 
     double *Sp1, *Sp2, **CV;
+
     Sp1 = new double[n_step + 1];
     Sp2 = new double[n_step + 1];
     CV = new double *[n_step + 1];
@@ -487,10 +504,14 @@ void CPrice::binomial_tree_spread_option_price(CIndex &index1, CIndex &index2,
         Sp2[i] = Sp2[i - 1] * std::exp(-2 * dx2);
     }
 
-    p1 = (dx1 * dx2 + (dx2 * nu1 + dx1 * nu2 + rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 up, d2 up
-    p2 = (dx1 * dx2 + (dx2 * nu1 - dx1 * nu2 - rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 up, d2 down
-    p3 = (dx1 * dx2 - (dx2 * nu1 + dx1 * nu2 - rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 down, d2 down
-    p4 = (dx1 * dx2 - (dx2 * nu1 - dx1 * nu2 + rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 down, d2 up
+    p1 = (dx1 * dx2 +
+          (dx2 * nu1 + dx1 * nu2 + rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 up, d2 up
+    p2 = (dx1 * dx2 +
+          (dx2 * nu1 - dx1 * nu2 - rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 up, d2 down
+    p3 = (dx1 * dx2 -
+          (dx2 * nu1 + dx1 * nu2 - rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 down, d2 down
+    p4 = (dx1 * dx2 -
+          (dx2 * nu1 - dx1 * nu2 + rho * sigma1 * sigma2) * dt) / (4 * dx1 * dx2); // s1 down, d2 up
 
     iop = -1;
     if (option_type == "Call" || option_type == "call") {
@@ -511,7 +532,8 @@ void CPrice::binomial_tree_spread_option_price(CIndex &index1, CIndex &index2,
         for (j = 0; j <= i; ++j) {
             for (k = 0; k <= i; ++k) {
                 CV[j][k] =
-                        (p1 * CV[j][k] + p2 * CV[j][k + 1] + p3 * CV[j + 1][k + 1] + p4 * CV[j + 1][k]) * dfactor;
+                        (p1 * CV[j][k] + p2 * CV[j][k + 1] +
+                         p3 * CV[j + 1][k + 1] + p4 * CV[j + 1][k]) * dfactor;
             }
         }
     }
@@ -544,14 +566,17 @@ void CPrice::trinomial_tree_spread_option_price(CIndex &index1, CIndex &index2, 
 
     int i, k, j, iop, nstep;
 
-    double dx1, dx2, nu1, nu2, p1, p2, p3, p4, p5;
+    double dx1, dx2, nu1, nu2;
+    double p1, p2, p3, p4, p5;
     double dfactor, dt;
 
     dt = T / n_step;
     dx1 = sigma1 * std::sqrt(3.0 * dt);
     dx2 = sigma2 * std::sqrt(3.0 * dt);
+
     nu1 = r - q1 - 0.5 * sigma1 * sigma1;
     nu2 = r - q2 - 0.5 * sigma2 * sigma2;
+
     nstep = 2 * n_step + 1;
 
     double *Sp1, *Sp2, **CV;
@@ -566,9 +591,10 @@ void CPrice::trinomial_tree_spread_option_price(CIndex &index1, CIndex &index2, 
     // Tree 주가 생성
     Sp1[0] = S1 * std::exp(n_step * dx1);
     Sp2[0] = S2 * std::exp(n_step * dx2);
-    for (i = 0; i <= n_step; ++i) {
-        Sp1[i] = Sp1[i - 1] * std::exp(dx1);
-        Sp2[i] = Sp2[i - 1] * std::exp(dx2);
+
+    for (i = 1; i <= n_step; ++i) {
+        Sp1[i] = Sp1[i - 1] * std::exp(-dx1);
+        Sp2[i] = Sp2[i - 1] * std::exp(-dx2);
     }
 
     double f1, f2, f3, f4, f5, f6;
@@ -612,6 +638,7 @@ void CPrice::trinomial_tree_spread_option_price(CIndex &index1, CIndex &index2, 
     }
 
     m_price = CV[0][0];
+
     for (i = 0; i < nstep; ++i) {
         delete[] CV[i];
     }
@@ -650,14 +677,11 @@ CPrice::implicit_fdm_spread_option_price(CIndex &index1, CIndex &index2, CYield 
     oldCV = new double *[n_spot];
     newCV = new double *[n_spot];
 
-    for (i = 0; i < n_spot + 1; ++i) {
+    for (i = 0; i < n_spot; ++i) {
         oldCV[i] = new double[n_spot];
-//        newCV[i] = new double[n_spot];
-    }
-    for (i = 0; i < n_spot + 1; ++i) {
-//        oldCV[i] = new double[n_spot];
         newCV[i] = new double[n_spot];
     }
+
 
     double dt, cl, mu1, mu2, dx1, dx2, edx1, edx2;
 
@@ -705,6 +729,7 @@ CPrice::implicit_fdm_spread_option_price(CIndex &index1, CIndex &index2, CYield 
 
     // n_spot 개 미지수중에 2개의 경계조선을 적용하므로 실제 미지수는 n_spot-2개 가 된다.
     double **smatrix1, **smatrix2, **tmp, *known_value, *unknown_value;
+
     smatrix1 = new double *[n_spot - 2];  // row create
     smatrix2 = new double *[n_spot - 2];  // row create
     tmp = new double *[n_spot - 2]; // row create
@@ -769,14 +794,19 @@ CPrice::implicit_fdm_spread_option_price(CIndex &index1, CIndex &index2, CYield 
                 for (k = 0; k < n_spot - 2; ++k) {
                     tmp[j][k] = smatrix1[j][k];
                 }
-                known_value[j] = oldCV[j + 1][i] + pmm1 * (oldCV[j][i - 1] + oldCV[j + 2][i + 1]
-                                                           - oldCV[j][i + 1] - oldCV[j + 2][i - 1]);
+
+                known_value[j] =
+                        oldCV[j + 1][i] + pmm1 *
+                                          (oldCV[j][i - 1] + oldCV[j + 2][i + 1]
+                                           - oldCV[j][i + 1] - oldCV[j + 2][i - 1]);
             }
+
             tridiagonal_elimination(tmp, known_value, unknown_value, n_spot - 2);
             for (j = 0; j < n_spot - 2; ++j) {
                 newCV[j + 1][i] = unknown_value[i];
             }
         }
+
         // 경계 조선을 적용한 값 대입
         for (i = 0; i < n_spot; ++i) {
             newCV[i][0] = (2.0 * newCV[i][1] - newCV[i][2]);
@@ -789,8 +819,10 @@ CPrice::implicit_fdm_spread_option_price(CIndex &index1, CIndex &index2, CYield 
                 for (k = 0; k < n_spot - 2; ++k) {
                     tmp[j][k] = smatrix2[j][k];
                 }
-                known_value[j] = newCV[i][j + 1] + pmm2 * (newCV[i - 1][j] + newCV[i + 1][j + 2]
-                                                           - newCV[i + 1][j] - newCV[i - 1][j + 2]);
+                known_value[j] =
+                        newCV[i][j + 1] + pmm2 *
+                                          (newCV[i - 1][j] + newCV[i + 1][j + 2]
+                                           - newCV[i + 1][j] - newCV[i - 1][j + 2]);
             }
             tridiagonal_elimination(tmp, known_value, unknown_value, n_spot - 2);
             for (j = 0; j < n_spot - 2; ++j) {
