@@ -12,5 +12,8 @@ void make_option3();
 
 void make_option4();
 
-
 void make_option5();
+
+void make_option6();
+
+void make_option7();

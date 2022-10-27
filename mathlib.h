@@ -63,3 +63,5 @@ double *halton_sequence(unsigned num, unsigned prime_number);
 
 
 double halton_sequence_(int num, int prime_number);
+
+double n(double z);

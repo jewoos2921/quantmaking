@@ -26,8 +26,8 @@ void make_option() {
     T = 1.0; // 잔존만기
 
     n_step = 200; // 잔존만기에 대해 n_step으로 계산, tree와 fdm에서
-    n_sim = 30000; // 시뮬레이션 횟수
     n_spot = 400; // 기초자산의 가격을 n_stpo 수로 나누어 계산
+    n_sim = 30000; // 시뮬레이션 횟수
 
     CIndex index(S, sigma, q);
     CYield yield(r);
@@ -188,3 +188,85 @@ void make_option5() {
     delete[]rn;
 }
 
+
+void make_option6() {
+    double S, X, r, q, sigma, T;
+
+    unsigned long n_sim;
+
+
+    S = 100.0; // 기초 자산 가격
+    X = 110.0; // 행사 가격
+    r = 0.05; // risk free rate
+    q = 0.01; // dividend rate
+    sigma = 0.3; // 변동성
+    T = 1.0; // 잔존만기
+    n_sim = 1000000; // 시뮬레이션 횟수
+
+
+
+
+    CIndex index(S, sigma, q);
+    CYield yield(r);
+    CProduct eoption("call", X, T);
+    CPrice price;
+
+    printf("\n");
+    price.black_scholes_option_price(index, yield, eoption);
+    std::cout << "해석해에 의한 옵션가격: " << price.m_price << std::endl;
+
+
+    printf("\n");
+    price.halton_sequence_simulation_european_option_space(index, yield, eoption, n_sim);
+    std::cout << "시뮬레이션에 의한 옵션가격: " << price.m_price << std::endl;
+    printf("\n");
+
+//    price.sobol_sequence_simulation_european_option_space(index, yield, eoption, n_sim);
+//    std::cout << "대조변수기법이 적용된 시물레이션에 의한 옵션가격: " << price.m_price << std::endl;
+
+
+}
+
+void make_option7() {
+    double S, X, r, q, sigma, T, alpha;
+
+    int n_step, n_spot;
+
+
+    S = 100.0; // 기초 자산 가격
+    X = 110.0; // 행사 가격
+    r = 0.05; // risk free rate
+    q = 0.01; // dividend rate
+    sigma = 0.3; // 변동성
+    T = 1.0; // 잔존만기
+
+    n_step = 200; // 잔존만기에 대해 n_step으로 계산, tree와 fdm에서
+    n_spot = 400; // 기초자산의 가격을 n_stpo 수로 나누어 계산
+    alpha = 5.0; // confidence Coefficient
+    // alpha 1은 = 68.26%
+    // alpha 1.65은 = 90.1%
+    // alpha 2은 = 95.44%
+    // alpha 2.58은 = 99%
+    // alpha 3은 = 99.75%
+    // alpha 4은 = 99.995%
+    // alpha 5은 = 99.99995%
+    // 의 신뢰수준
+
+    CIndex index(S, sigma, q);
+    CYield yield(r);
+    CProduct eoption("call", X, T);
+    CPrice price;
+
+    price.black_scholes_option_price(index, yield, eoption);
+    std::cout << "해석해에 의한 옵션가격: " << price.m_price << std::endl;
+
+    price.ci_binomial_tree_european_option_space(index, yield, eoption, n_step, alpha);
+    std::cout << "Binomial Tree에 의한 옵션가격: " << price.m_price << std::endl;
+
+    price.ci_trinomial_tree_european_option_space(index, yield, eoption, n_step, alpha);
+    std::cout << "Trinomial Tree에 의한 옵션가격: " << price.m_price << std::endl;
+
+    price.ci_implicit_fdm_european_option_space(index, yield, eoption, n_step, n_spot, alpha);
+    std::cout << "Implicit FDM에 의한 옵션가격: " << price.m_price << std::endl;
+
+}

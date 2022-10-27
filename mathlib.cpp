@@ -605,3 +605,7 @@ double halton_sequence_(int num, int prime_number) {
 
     return haltonnumber;
 }
+
+double n(double z) {
+    return 1.0 / std::sqrt(2.0 * PI) * std::exp(-0.5 * z * z);
+}

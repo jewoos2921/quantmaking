@@ -81,6 +81,31 @@ public:
                                                               unsigned long n_sim,
                                                               double *rn);
 
+    void halton_sequence_simulation_european_option_space(CIndex &index,
+                                                          CYield &yield,
+                                                          CProduct &product,
+                                                          unsigned long n_sim);
+
+    void sobol_sequence_simulation_european_option_space(CIndex &index,
+                                                         CYield &yield,
+                                                         CProduct &product,
+                                                         unsigned long n_sim);
+
+    void ci_binomial_tree_european_option_space(CIndex &index,
+                                                CYield &yield,
+                                                CProduct &product,
+                                                int n_step, double alpha);
+
+    void ci_trinomial_tree_european_option_space(CIndex &index,
+                                                 CYield &yield,
+                                                 CProduct &product,
+                                                 int n_step, double alpha);
+
+    void ci_implicit_fdm_european_option_space(CIndex &index,
+                                               CYield &yield,
+                                               CProduct &product,
+                                               int n_step, int n_spot, double alpha);
+
 public:
     double m_price;
 
