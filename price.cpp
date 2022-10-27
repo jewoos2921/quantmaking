@@ -1344,11 +1344,11 @@ CPrice::ci_implicit_fdm_european_option_space(CIndex &index, CYield &yield, CPro
 
     dt = T / n_step;
     dx = sigma * std::sqrt(3.0 * dt);
-    nu = r - q - 0.5 * sigma * sigma;
 
-    Pu = -0.5 * (sigma * sigma / (dx * dx) + nu / dx);
+    nu = r - q - 0.5 * sigma * sigma;
+    Pu = -0.5 * dt *(sigma * sigma / (dx * dx) + nu / dx);
     Pm = 1.0 + dt * (sigma * sigma / (dx * dx) + r);
-    Pd = -0.5 * (sigma * sigma / (dx * dx) - nu / dx);
+    Pd = -0.5 * dt *(sigma * sigma / (dx * dx) - nu / dx);
 
     smax = S * std::exp(nu * T + alpha * sigma * std::sqrt(T));
     smin = S * std::exp(nu * T - alpha * sigma * std::sqrt(T));
