@@ -1186,7 +1186,7 @@ void CPrice::ci_binomial_tree_european_option_space(CIndex &index, CYield &yield
     ccnode = 0;
 
 
-    nodemax = nodemin = 0;
+    nodemax = nodemin = S;
 
     do {
         ccnode++;
@@ -1224,9 +1224,11 @@ void CPrice::ci_binomial_tree_european_option_space(CIndex &index, CYield &yield
         if (i >= ccnode) {
             if ((i - ccnode) % 2 == 0) {
                 NCV[0] = OCV[1] * dfactor;
+
                 for (j = 1; j < ccnode; ++j) {
                     NCV[j] = (Pu * OCV[j] + Pd * OCV[j + 1]) * dfactor;
                 }
+
                 NCV[ccnode] = OCV[ccnode - 1] * dfactor;
             } else {
                 for (j = 1; j <= ccnode; ++j) {
@@ -1235,7 +1237,7 @@ void CPrice::ci_binomial_tree_european_option_space(CIndex &index, CYield &yield
             }
             for (j = 0; j <= ccnode; ++j) { OCV[j] = NCV[j]; }
         } else {
-            for (j = 0; j <= 1; ++j) {
+            for (j = 0; j <= i; ++j) {
                 OCV[j] = (Pu * OCV[j] + Pd * OCV[j + 1]) * dfactor;
             }
         }
