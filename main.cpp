@@ -2,7 +2,7 @@
 #include "makeOption.h"
 
 int main() {
-    make_option7();
+    make_option_greeks();
 }
 
 

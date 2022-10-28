@@ -606,6 +606,52 @@ double halton_sequence_(int num, int prime_number) {
     return haltonnumber;
 }
 
-double n(double z) {
+double n(double z) { // The normal distribution function
     return 1.0 / std::sqrt(2.0 * PI) * std::exp(-0.5 * z * z);
+}
+
+double implied_volatility_bisection(double spot, double strike, double riskfree, double dividend, double maturity,
+                                    double option_price) {
+    double xa, xb, xc, fxa, fxc;
+    double vol, error_tolerance, error;
+    int iter = 0;
+    error_tolerance = 1.0e-15;
+
+    xa = 0.0; // 변동성 최저값 0
+    xb = 10.0; // 변동성 최대값 10
+
+    do {
+        xc = (xa + xb) / 2.0;
+        fxa = european_calloption_price(spot, strike, riskfree, dividend, xa, maturity);
+        fxc = european_calloption_price(spot, strike, riskfree, dividend, xc, maturity);
+        if (fxa * fxc < 0) {
+            xb = xc;
+        } else if (fxa * fxc > 0) {
+            xa = xc;
+        } else {
+            error = 0.0;
+            break;
+        }
+        error = std::fabs(xb - xa);
+        iter++;
+    } while (error > error_tolerance && iter < 100);
+
+    if (iter == 100) {
+        std::cout << "허용오차범위는 불만족하나, 가장 근사한 값은 " << xc << "입니다." << std::endl;
+    } else {
+        std::cout << "bisection method 계산횟수: " << iter << "입니다." << std::endl;
+    }
+
+    vol = xc;
+    return vol;
+}
+
+double
+european_calloption_price(double spot, double strike, double riskfree, double dividend, double vol, double maturity) {
+    double d1, d2;
+    d1 = (std::log(spot / strike) + (riskfree - dividend + (vol * vol) / 2.0) * maturity);
+    d2 = d1 - vol * std::sqrt(maturity);
+
+    return spot * std::exp(-dividend * maturity) * N(d1) -
+           strike * std::exp(-riskfree * maturity) * N(d2); // BS call option price
 }

@@ -3,8 +3,6 @@
 //
 #include <cmath>
 #include <ctime>
-#include <fstream>
-#include <iostream>
 #include "index.h"
 #include "yield.h"
 #include "product.h"
@@ -16,8 +14,7 @@ CPrice::CPrice() {
     m_price = 0;
 }
 
-CPrice::~CPrice() {
-}
+CPrice::~CPrice() = default;
 
 void CPrice::black_scholes_option_price(CIndex &index, CYield &yield, CProduct &product) {
     std::string option_type = product.m_option_type;
@@ -1348,9 +1345,9 @@ CPrice::ci_implicit_fdm_european_option_space(CIndex &index, CYield &yield, CPro
     dx = sigma * std::sqrt(3.0 * dt);
 
     nu = r - q - 0.5 * sigma * sigma;
-    Pu = -0.5 * dt *(sigma * sigma / (dx * dx) + nu / dx);
+    Pu = -0.5 * dt * (sigma * sigma / (dx * dx) + nu / dx);
     Pm = 1.0 + dt * (sigma * sigma / (dx * dx) + r);
-    Pd = -0.5 * dt *(sigma * sigma / (dx * dx) - nu / dx);
+    Pd = -0.5 * dt * (sigma * sigma / (dx * dx) - nu / dx);
 
     smax = S * std::exp(nu * T + alpha * sigma * std::sqrt(T));
     smin = S * std::exp(nu * T - alpha * sigma * std::sqrt(T));
@@ -1418,7 +1415,7 @@ CPrice::ci_implicit_fdm_european_option_space(CIndex &index, CYield &yield, CPro
     for (i = 0; i < nspot; ++i) { CV[i] = MAX(iop * (Sp[i] - X), 0); }
 
     // 만기에서부터 Backward Induction 실행하여 현재가치 계산
-    for (t = n_step - 1; t > 0; --t) {
+    for (t = n_step - 1; t >= 0; --t) {
         for (i = 0; i < nspot - 2; ++i) {
             for (j = 0; j < nspot - 2; ++j) { tmp[i][j] = smatrix[i][j]; }
             known_value[i] = CV[i + 1];

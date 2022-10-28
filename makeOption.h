@@ -17,3 +17,5 @@ void make_option5();
 void make_option6();
 
 void make_option7();
+
+void make_option_greeks();

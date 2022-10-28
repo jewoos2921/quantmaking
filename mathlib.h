@@ -65,3 +65,10 @@ double *halton_sequence(unsigned num, unsigned prime_number);
 double halton_sequence_(int num, int prime_number);
 
 double n(double z);
+
+// 이분법을 이용한 옵션의 내재변동성을 찾기
+double implied_volatility_bisection(double spot, double strike, double riskfree,
+                                    double dividend, double maturity, double option_price);
+
+double european_calloption_price(double spot, double strike, double riskfree,
+                                 double dividend, double vol, double maturity);
