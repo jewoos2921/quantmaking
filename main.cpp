@@ -2,5 +2,5 @@
 #include "makeOption.h"
 
 int main() {
-    make_swaption();
+    make_nelson_siegel();
 }

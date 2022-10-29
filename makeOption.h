@@ -29,3 +29,5 @@ void make_bootstrapping();
 void make_caplet();
 
 void make_swaption();
+
+void make_nelson_siegel();
