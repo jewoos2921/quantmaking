@@ -322,3 +322,25 @@ void make_option_greeks() {
     std::cout << "Implicit FDM에 의한 옵션가격: " << price.m_price << std::endl;
 
 }
+
+
+void make_volatility() {
+    double spot, strike, ristfree, dividend, volaitirity, maturity;
+
+    spot = 100.0;
+    strike = 105.0;
+    ristfree = 0.055;
+    dividend = 0.02;
+    volaitirity = 0.25;
+    maturity = 1.0;
+
+    double option_price = european_calloption_price(spot, strike, ristfree, dividend,
+                                                    volaitirity, maturity);
+    std::cout << "European Call option 가격 : " << option_price << std::endl;
+    std::cout << "기초자산의 입력 변동성 : " << volaitirity << std::endl;
+
+    double implied_vol = implied_volatility_newtonraphson(spot, strike, ristfree, dividend,
+                                                          volaitirity, maturity);
+
+    std::cout << "newton raphson method 계산된 내재변동성: " << implied_vol << std::endl;
+}

@@ -655,3 +655,41 @@ european_calloption_price(double spot, double strike, double riskfree, double di
     return spot * std::exp(-dividend * maturity) * N(d1) -
            strike * std::exp(-riskfree * maturity) * N(d2); // BS call option price
 }
+
+double european_calloption_vega(double spot, double strike, double riskfree, double dividend, double volatility,
+                                double maturity) {
+    double d1 = (std::log(spot / strike) + (riskfree - dividend + (volatility * volatility) / 2.0) * maturity)
+                / (volatility * std::sqrt(maturity));
+
+    return spot * std::exp(-dividend * maturity) * n(d1) * std::sqrt(maturity); // BS call option vega
+}
+
+double implied_volatility_newtonraphson(double spot, double strike, double riskfree, double dividend, double maturity,
+                                        double option_price) {
+    double fx, fxprime;
+    double vol, error_tolerance, error;
+    int iter;
+
+    iter = 0;
+
+    error_tolerance = 1.0e-15;
+    vol = 0.5;
+
+    do {
+        fx = european_calloption_price(spot, strike, riskfree, dividend, vol, maturity);
+        fxprime = european_calloption_vega(spot, strike, riskfree, dividend, vol, maturity);
+
+        vol = vol - (fx - option_price) / fxprime;
+        error = std::fabs(fx - option_price);
+        iter++;
+    } while (error > error_tolerance && iter < 100);
+
+    if (iter == 100) {
+        std::cout << "허용오차범위는 불만족하나, 가장 근사한 값은 " << vol << "입니다." << std::endl;
+    } else {
+        std::cout << "newton raphson method 계산횟수: " << iter << "입니다." << std::endl;
+    }
+
+    return vol;
+}
+

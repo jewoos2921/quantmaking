@@ -19,3 +19,5 @@ void make_option6();
 void make_option7();
 
 void make_option_greeks();
+
+void make_volatility();

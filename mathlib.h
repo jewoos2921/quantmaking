@@ -72,3 +72,10 @@ double implied_volatility_bisection(double spot, double strike, double riskfree,
 
 double european_calloption_price(double spot, double strike, double riskfree,
                                  double dividend, double vol, double maturity);
+
+
+double european_calloption_vega(double spot, double strike, double riskfree,
+                                double dividend, double volatility, double maturity);
+
+double implied_volatility_newtonraphson(double spot, double strike, double riskfree,
+                                        double dividend, double maturity, double option_price);
