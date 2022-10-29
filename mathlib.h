@@ -92,3 +92,8 @@ double caplet_price(int option_type, double forward, double strike, double tau, 
 
 double cap_floor_price(int option_type, double forwardrate, double strike, double vol, int ntime, double *zerorate,
                        double *markettime, double basis);
+
+// 스왑션
+double swaption_price(int option_type, double tenor, double strike, double margin,
+                      double vol, double *zerorate, double *markettime,
+                      int ntime, double basis, double swapfrequency);

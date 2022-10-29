@@ -27,3 +27,5 @@ void make_implied_volatility();
 void make_bootstrapping();
 
 void make_caplet();
+
+void make_swaption();

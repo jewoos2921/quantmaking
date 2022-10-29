@@ -17,4 +17,5 @@ add_executable(quantmaking
         makeOption.cpp
         sobol.cpp
         priceAlpha.cpp
+        nelson_siegel.cpp
         )

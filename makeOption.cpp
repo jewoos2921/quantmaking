@@ -574,3 +574,74 @@ void make_caplet() {
     delete[] ctime;
     delete[] zerorate;
 }
+
+void make_swaption() {
+    std::cout << std::setprecision(20);
+
+    int i, nrtime;
+    double *rtime; // day base
+    double *zrate;
+    nrtime = 9;
+
+
+    rtime = new double[nrtime];
+    zrate = new double[nrtime];
+
+
+    rtime[0] = 1;
+    zrate[0] = 0.0627;
+    rtime[1] = 92;
+    zrate[1] = 0.0630;
+    rtime[2] = 365;
+    zrate[2] = 0.0641;
+    rtime[3] = 730;
+    zrate[3] = 0.0651;
+    rtime[4] = 1095;
+    zrate[4] = 0.0661;
+    rtime[5] = 1461;
+    zrate[5] = 0.0672;
+    rtime[6] = 1826;
+    zrate[6] = 0.0682;
+    rtime[7] = 2556;
+    zrate[7] = 0.0693;
+    rtime[8] = 3652;
+    zrate[8] = 0.0704;
+
+    double tenor, maturity, margin, swapfrequency, strike, fixed_vol, day_basis;
+    double payer_swaption_price, receiver_swaption_price;
+    tenor = 2.0;
+    maturity = 1.0;
+    strike = 0.063;
+    day_basis = 365.0;
+    margin = 0.0;
+    fixed_vol = 0.2;
+    swapfrequency = 4.0;
+
+    int nstime;
+    double *stime; // day base
+    double *zerorate;
+    int ncoupon; // 이표지급수
+    ncoupon = 4;
+    nstime = ncoupon + 1;
+
+    stime = new double[nstime];
+    zerorate = new double[nstime];
+
+    stime[0] = 365;
+    stime[1] = 457;
+    stime[2] = 546;
+    stime[3] = 638;
+    stime[4] = 730;
+
+    for (i = 0; i < nstime; ++i) { zerorate[i] = linear_interpolation(nrtime, rtime, zrate, stime[i]); }
+
+    payer_swaption_price = swaption_price(1, tenor, strike, margin, fixed_vol, zerorate,
+                                          stime, ncoupon, day_basis, swapfrequency);
+    receiver_swaption_price = swaption_price(-1, tenor, strike, margin, fixed_vol,
+                                             zerorate, stime, ncoupon, day_basis, swapfrequency);
+
+    delete[] rtime;
+    delete[] zrate;
+    delete[] stime;
+    delete[] zerorate;
+}

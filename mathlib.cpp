@@ -846,3 +846,37 @@ double cap_floor_price(int option_type, double forwardrate, double strike, doubl
     return capprice;
 }
 
+double swaption_price(int option_type, double tenor, double strike, double margin, double vol, double *zerorate,
+                      double *markettime, int ntime, double basis, double swapfrequency) {
+    int i;
+    double dt, swapforwardab, volabst, swaptionprice, sump;
+    swaptionprice = 0.0;
+
+    if (markettime[0] < 0.0) { return 0.0; }
+
+    sump = 0.0;
+
+    for (i = 0; i < ntime; ++i) {
+        dt = (markettime[i + 1] - markettime[i]) / basis;
+        sump += dt * 1.0 / std::pow((1.0 + zerorate[i + 1]), markettime[i + 1] / basis);
+    }
+    double df1, df2, d1, d2;
+
+    df1 = 1.0 / std::pow((1.0 + zerorate[0]), markettime[0] / basis);
+    df2 = 1.0 / std::pow((1.0 + zerorate[ntime]), markettime[ntime] / basis);
+    swapforwardab = (df1 - df2) / sump + margin;
+
+    volabst = vol * std::sqrt(markettime[0] / basis);
+    d1 = (std::log(swapforwardab / strike) + 0.5 * volabst * volabst) / volabst;
+    d2 = d1 - volabst;
+    swaptionprice = option_type * sump * (swapforwardab * N(option_type * d1) - strike * N(option_type * d2));
+
+    if (option_type == 1) {
+        std::cout << "Player Swaption Price : " << swaptionprice << std::endl;
+    } else {
+        std::cout << "Receiver Swaption Price : " << swaptionprice << std::endl;
+    }
+
+    return swaptionprice;
+}
+
