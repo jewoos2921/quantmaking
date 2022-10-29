@@ -83,3 +83,12 @@ double implied_volatility_newtonraphson(double spot, double strike, double riskf
 // 이자율 변환
 void par_to_zero_bootstrapping(int nytime, double *ytime, double *yrate,
                                int coupon_frequency, int nztime, double *ztime, double *zrate);
+
+double linear_interpolation(int n_time, double *time, double *rate, double t);
+
+
+double caplet_price(int option_type, double forward, double strike, double tau, double maturity, double vol,
+                    double discount_factor);
+
+double cap_floor_price(int option_type, double forwardrate, double strike, double vol, int ntime, double *zerorate,
+                       double *markettime, double basis);

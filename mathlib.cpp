@@ -761,3 +761,88 @@ par_to_zero_bootstrapping(int nytime, double *ytime, double *yrate, int coupon_f
     delete[]dfp;
 }
 
+double linear_interpolation(int n_time, double *time, double *rate, double t) {
+    int i;
+    double ret = 0;
+    // time[0]이 제일 작은 값일 때
+    if (time[0] < time[1]) {
+        if (t <= time[0]) { ret = rate[0]; }
+        else if (t > time[n_time - 1]) { ret = rate[n_time - 1]; }
+        else {
+            for (i = 1; i < n_time; ++i) {
+                if (time[i] >= t) {
+                    ret = rate[i - 1] + (rate[i] - rate[i - 1]) / (time[i] - time[i - 1]) * (t - time[i - 1]);
+                    break;
+                }
+            }
+        }
+    } else {
+        // time[0]이 제일 큰 값일때
+        if (t > time[0]) { ret = rate[0]; }
+        else if (t <= time[n_time - 1]) { ret = rate[n_time - 1]; }
+        else {
+            for (i = 1; i < n_time; ++i) {
+                if (time[i] <= t) {
+                    ret = rate[i - 1] + (rate[i] - rate[i - 1]) / (time[i] - time[i - 1]) * (t - time[i - 1]);
+                    break;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+double caplet_price(int option_type, double forward, double strike, double tau, double maturity, double vol,
+                    double discount_factor) {
+    double d1 = (std::log(forward / strike) + 0.5 * vol * vol * maturity) / (vol * std::sqrt(maturity));
+    double d2 = d1 - vol * std::sqrt(maturity);
+    double caplet = tau * discount_factor * option_type *
+                    (forward * N(option_type * d1) - strike * N(option_type * d2));
+
+    return caplet;
+}
+
+double cap_floor_price(int option_type, double forwardrate, double strike, double vol, int ntime, double *zerorate,
+                       double *markettime, double basis) {
+    int i, istart;
+    double df1, df2, forward, tau, maturity;
+    double capletprice, capprice;
+
+    istart = 0;
+    capprice = 0.0;
+
+    for (i = 0; i < ntime; ++i) {
+        if (markettime[i + 1] < 0.0) {
+            istart = i + 1;
+            continue;
+        }
+        tau = (markettime[i + 1] - markettime[i]) / basis; // 0은 시작점을 의미함
+        if (i == 0 || i == istart) {
+            forward = forwardrate;
+            df2 = 1.0 / std::pow((1.0 + zerorate[i + 1]), markettime[i + 1] / basis);
+        } else {
+            df1 = 1.0 / std::pow((1.0 + zerorate[i]), markettime[i] / basis);
+            df2 = 1.0 / std::pow((1.0 + zerorate[i + 1]), markettime[i + 1] / basis);
+            forward = (df1 / df2 - 1.0) / tau;
+        }
+
+        maturity = markettime[i] / 365.0;
+        if (i == 0 || i == istart) {
+            capletprice = tau * df2 * MAX(option_type * (forward - strike), 0.0);
+        } else {
+            capletprice = caplet_price(option_type,
+                                       forward, strike, tau,
+                                       maturity, vol, df2);
+        }
+        capprice += capletprice;
+    }
+    if (option_type == 1) {
+        std::cout << "Cap Price : " << capprice << std::endl;
+    } else {
+        std::cout << "Floor Price : " << capprice << std::endl;
+    }
+
+    return capprice;
+}
+
