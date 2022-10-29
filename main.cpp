@@ -2,7 +2,7 @@
 #include "makeOption.h"
 
 int main() {
-    make_volatility();
+    make_implied_volatility();
 }
 
 

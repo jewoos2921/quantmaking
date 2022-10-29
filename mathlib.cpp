@@ -658,7 +658,8 @@ european_calloption_price(double spot, double strike, double riskfree, double di
 
 double european_calloption_vega(double spot, double strike, double riskfree, double dividend, double volatility,
                                 double maturity) {
-    double d1 = (std::log(spot / strike) + (riskfree - dividend + (volatility * volatility) / 2.0) * maturity)
+    double d1 = (std::log(spot / strike) +
+            (riskfree - dividend + (volatility * volatility) / 2.0) * maturity)
                 / (volatility * std::sqrt(maturity));
 
     return spot * std::exp(-dividend * maturity) * n(d1) * std::sqrt(maturity); // BS call option vega

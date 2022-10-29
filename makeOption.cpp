@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include <ctime>
+#include <iomanip>
 #include "mathlib.h"
 #include "index.h"
 #include "yield.h"
@@ -11,6 +12,9 @@
 #include "makeOption.h"
 #include "sobol.h"
 #include "priceAlpha.h"
+#include "nonlinearsolver.h"
+#include "data.h"
+
 
 void make_option() {
     double S, X, r, q, sigma, T;
@@ -343,4 +347,74 @@ void make_volatility() {
                                                           volaitirity, maturity);
 
     std::cout << "newton raphson method 계산된 내재변동성: " << implied_vol << std::endl;
+}
+
+void make_implied_volatility() {
+
+    int i;
+    int n_strike, n_maturity; // 행사가격, 잔존만기 수량
+    double riskfreerate, dividend, S, carrycost; // 무위험이자율, 배당률, 기초자산, 캐리비용
+
+    double *v_strike, *v_maturity; // 행사가격, 잔존만기
+    double **m_vol; // market vol
+
+    int n_parameter;  // 미지 파라미터
+    double *parameter; // 파라미터
+
+    // display points
+    std::cout << std::setprecision(20);
+
+    n_strike = 5;
+    n_maturity = 6;
+
+    v_strike = new double[n_strike];
+    v_maturity = new double[n_maturity];
+    m_vol = new double *[n_strike];
+
+    for (i = 0; i < n_strike; ++i) { m_vol[i] = new double[n_maturity]; }
+
+    read_market_vol("marketvol.txt", n_strike, v_strike, n_maturity, v_maturity, m_vol);
+
+    S = v_strike[(n_strike - 1) / 2];
+    riskfreerate = 0.03;
+    dividend = 0.00;
+    carrycost = riskfreerate - dividend;
+
+    n_parameter = 7;
+    parameter = new double[n_parameter];
+    for (i = 0; i < n_parameter; ++i) { parameter[i] = 0.1; } // 파라미터 초기화
+
+    nonlinear_parameter_solver(S, carrycost, n_strike, v_strike, n_maturity,
+                               v_maturity, m_vol, n_parameter, parameter,
+                               implied_volatility_function); // 비선형 파라미터 추정
+
+    for (i = 0; i < n_parameter; ++i) { std::cout << "p[" << i << "]: " << parameter[i] << std::endl; }
+
+    double **imvol, **localvol;
+    imvol = new double *[n_strike]; // implied vol function에 의한 내재변동성
+    localvol = new double *[n_strike]; // local vol
+
+    for (i = 0; i < n_strike; ++i) {
+        imvol[i] = new double[n_maturity];
+        localvol[i] = new double[n_maturity];
+    }
+
+    implied_volatility_2(S, carrycost, n_strike, v_strike, n_maturity, v_maturity, imvol,
+                         n_parameter, parameter);
+    save_vol("impliedvol.txt", n_strike, v_strike, n_maturity, v_maturity, imvol);
+    local_volatility(S, carrycost, n_strike, v_strike, n_maturity, v_maturity, localvol,
+                     n_parameter, parameter);
+    save_vol("localvol.txt", n_strike, v_strike, n_maturity, v_maturity, localvol);
+
+    for (i = 0; i < n_strike; ++i) {
+        delete[] m_vol[i];
+        delete[] imvol[i];
+        delete[] localvol[i];
+    }
+
+    delete[] parameter;
+    delete[] v_strike;
+    delete[] v_maturity;
+    delete[] imvol;
+    delete[] localvol;
 }
