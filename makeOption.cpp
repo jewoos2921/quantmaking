@@ -4,6 +4,7 @@
 #include <iostream>
 #include <ctime>
 #include <iomanip>
+#include <fstream>
 #include "mathlib.h"
 #include "index.h"
 #include "yield.h"
@@ -417,4 +418,88 @@ void make_implied_volatility() {
     delete[] v_maturity;
     delete[] imvol;
     delete[] localvol;
+}
+
+void make_bootstrapping() {
+    std::cout << std::setprecision(20);
+
+    int i, nytime, coupon_frequency;
+    double *ytime;
+    double *yrate;
+    nytime = 15;
+    coupon_frequency = 4;
+
+    ytime = new double[nytime];
+    yrate = new double[nytime];
+
+
+    ytime[0] = 0.25;
+    yrate[0] = 0.05360;
+    ytime[1] = 1.0;
+    yrate[1] = 0.05030;
+    ytime[2] = 2.0;
+    yrate[2] = 0.04890;
+    ytime[3] = 3.0;
+    yrate[3] = 0.04780;
+    ytime[4] = 4.0;
+    yrate[4] = 0.04738;
+    ytime[5] = 5.0;
+    yrate[5] = 0.04758;
+    ytime[6] = 6.0;
+    yrate[6] = 0.04778;
+    ytime[7] = 7.0;
+    yrate[7] = 0.04785;
+    ytime[8] = 8.0;
+    yrate[8] = 0.04810;
+    ytime[9] = 9.0;
+    yrate[9] = 0.04830;
+    ytime[10] = 10.0;
+    yrate[10] = 0.04855;
+    ytime[11] = 11.0;
+    yrate[11] = 0.04880;
+    ytime[12] = 12.0;
+    yrate[12] = 0.04905;
+    ytime[13] = 15.0;
+    yrate[13] = 0.04930;
+    ytime[14] = 20.0;
+    yrate[14] = 0.04955;
+
+
+    int nztime;
+    double *ztime;
+    double *zrate;
+
+    nztime = static_cast<int>(ytime[nytime - 1] * coupon_frequency);
+    ztime = new double[nztime];
+    zrate = new double[nztime];
+
+    for (i = 0; i < nztime; ++i) { ztime[i] = static_cast<double>(i + 1) / coupon_frequency; }
+
+    par_to_zero_bootstrapping(nytime, ytime, yrate,
+                              coupon_frequency, nztime, ztime,
+                              zrate);
+
+    std::ofstream outf("result.txt", std::ios::out | std::ios::trunc);
+    // ios::trunc 사용시 기존 데이터 삭제후 추가
+    // ios::app 사용시 데이터 추가 기능
+
+    outf << std::setprecision(20);
+    outf << "=입력된 액면가수익룰=" << std::endl;
+    outf << "만기 액면가수익률" << std::endl;
+    for (i = 0; i < nytime; ++i) {
+        outf << ytime[i] << " " << yrate[i] << std::endl;
+        outf << std::endl;
+    }
+
+    outf << "=계산된 현물이자율=" << std::endl;
+    outf << "만기 현물이자율" << std::endl;
+    for (i = 0; i < nztime; ++i) {
+        outf << ztime[i] << " " << zrate[i] << std::endl;
+        outf << std::endl;
+    }
+
+    delete[]ytime;
+    delete[]yrate;
+    delete[]ztime;
+    delete[]zrate;
 }

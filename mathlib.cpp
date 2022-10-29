@@ -659,7 +659,7 @@ european_calloption_price(double spot, double strike, double riskfree, double di
 double european_calloption_vega(double spot, double strike, double riskfree, double dividend, double volatility,
                                 double maturity) {
     double d1 = (std::log(spot / strike) +
-            (riskfree - dividend + (volatility * volatility) / 2.0) * maturity)
+                 (riskfree - dividend + (volatility * volatility) / 2.0) * maturity)
                 / (volatility * std::sqrt(maturity));
 
     return spot * std::exp(-dividend * maturity) * n(d1) * std::sqrt(maturity); // BS call option vega
@@ -692,5 +692,72 @@ double implied_volatility_newtonraphson(double spot, double strike, double riskf
     }
 
     return vol;
+}
+
+void
+par_to_zero_bootstrapping(int nytime, double *ytime, double *yrate, int coupon_frequency, int nztime, double *ztime,
+                          double *zrate) {
+
+    int i, j, si, ei, iter;
+    double dt, sumdf, sumdfp, Error, Epsilon, estimated;
+    double *df, *dfp;
+    df = new double[nztime];
+    dfp = new double[nztime];
+    dt = 1.0 / coupon_frequency;
+    Epsilon = 1.0e-15;
+    zrate[0] = yrate[0];
+
+    df[0] = std::pow((1.0 + zrate[0] * dt), -ztime[0] * coupon_frequency);
+    dfp[0] = -ztime[0] * coupon_frequency * std::pow((1.0 + zrate[0] * dt), -ztime[0] * coupon_frequency - 1.0);
+    si = 1;
+
+    for (i = 1; i < nytime; ++i) {
+        iter = 0;
+        Error = 0.0;
+        ei = static_cast<int>(ytime[i] * coupon_frequency);
+        zrate[ei - 1] = yrate[i];
+        do {
+            for (j = si; j < ei - 1; ++j) {
+                zrate[j] =
+                        (zrate[ei - 1] - zrate[si - 1]) / (ztime[ei - 1] - ztime[si - 1]) *
+                        (ztime[j] - ztime[si - 1]) + zrate[si - 1];
+            }
+            for (j = si; j < ei; ++j) {
+                df[j] = std::pow((1.0 + zrate[j] * dt), -ztime[j] * coupon_frequency);
+                dfp[j] = -ztime[j] * coupon_frequency *
+                         std::pow((1.0 + zrate[j] * dt), -ztime[j] * coupon_frequency - 1.0);
+            }
+
+            sumdf = sumdfp = 0.0;
+
+            for (j = 0; j < ei; ++j) {
+                sumdf += yrate[i] * df[j] * dt;
+                sumdfp += ytime[i] * dfp[j] * dt;
+            }
+
+            sumdf += df[ei - 1];
+            sumdfp += dfp[ei - 1];
+            estimated = zrate[ei - 1] - (sumdf - 1.0) / sumdfp;
+            Error = std::fabs(estimated - zrate[ei - 1]);
+            zrate[ei - 1] = estimated;
+
+            iter++;
+        } while (Error > Epsilon && iter < 10000);
+
+        for (j = si; j < ei - 1; ++j) {
+            zrate[j] =
+                    (zrate[ei - 1] - zrate[si - 1]) / (ztime[ei - 1] - ztime[si - 1]) *
+                    (ztime[j] - ztime[si - 1]) + zrate[si - 1];
+        }
+        for (j = si; j < ei; ++j) {
+            df[j] = std::pow((1.0 + zrate[j] * dt), -ztime[j] * coupon_frequency);
+            dfp[j] = -ztime[j] * coupon_frequency *
+                     std::pow((1.0 + zrate[j] * dt), -ztime[j] * coupon_frequency - 1.0);
+        }
+        si = ei;
+    }
+
+    delete[]df;
+    delete[]dfp;
 }
 

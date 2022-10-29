@@ -79,3 +79,7 @@ double european_calloption_vega(double spot, double strike, double riskfree,
 
 double implied_volatility_newtonraphson(double spot, double strike, double riskfree,
                                         double dividend, double maturity, double option_price);
+
+// 이자율 변환
+void par_to_zero_bootstrapping(int nytime, double *ytime, double *yrate,
+                               int coupon_frequency, int nztime, double *ztime, double *zrate);
