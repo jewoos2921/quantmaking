@@ -97,3 +97,5 @@ double cap_floor_price(int option_type, double forwardrate, double strike, doubl
 double swaption_price(int option_type, double tenor, double strike, double margin,
                       double vol, double *zerorate, double *markettime,
                       int ntime, double basis, double swapfrequency);
+
+double QS(double z, double nu, double kappa);

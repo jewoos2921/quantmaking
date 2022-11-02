@@ -880,3 +880,22 @@ double swaption_price(int option_type, double tenor, double strike, double margi
     return swaptionprice;
 }
 
+double QS(double z, double nu, double kappa) {
+    double h, p, m, c1, c2, c3;
+
+    h = 1. - (2. / 3.) * (nu + kappa)
+            * (nu + 3.0 * kappa) * std::pow((nu + 2.0 * kappa), -2.0);
+
+    p = (nu + 2.0 * kappa) / std::pow((nu + kappa), 2.0);
+
+    m = (h - 1.0) * (1.0 - 3.0 * h);
+
+    c1 = 1.0 - h + 0.5 * (2.0 - h) * m * p;
+
+    c2 = 1.0 - h * p * c1 - std::pow((z / (nu + kappa)), h);
+
+    c3 = c2 / (h * std::sqrt(2.0 * p * (1.0 + m * p)));
+
+    return 1.0 - N(c3);
+}
+

@@ -18,4 +18,10 @@ add_executable(quantmaking
         sobol.cpp
         priceAlpha.cpp
         nelson_siegel.cpp
+        vasicek.cpp
+        makeModel.cpp
+        cir.cpp
+        bdt.cpp
+        assetPrice.cpp
+        cbdt.cpp
         )
