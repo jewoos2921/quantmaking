@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import math
+
 import numpy as np
 
 
@@ -26,7 +29,7 @@ class Tensor(np.ndarray):
 
     def kpow(self, n: int) -> Tensor:
         """Return the tensor product with itself 'n' times."""
-        if n is 0:
+        if n == 0:
             return 1.0
         t = self
         for _ in range(n - 1):
@@ -51,13 +54,18 @@ class Tensor(np.ndarray):
 
     def is_permutation(self) -> bool:
         x = self
-        return (x.ndim == 2 and x.shape[0] == x.shape[1] and \
-                (x.sum(axis=0) == 1).all() and \
+        return (x.ndim == 2 and x.shape[0] == x.shape[1] and
+                (x.sum(axis=0) == 1).all() and
                 (x.sum(axis=1) == 1).all() and
                 ((x == 1) or (x == 0)).all())
 
+    @property
+    def nbits(self) -> int:
+        """Compute the number of qubits in the state."""
+        return int(math.log2(self.shape[0]))
 
-# Bit width of complex data type, 64, or 128
+
+# A bit width of complex data type, 64, or 128
 tensor_width = 64
 
 
@@ -65,6 +73,6 @@ tensor_width = 64
 # Valid values can be np.complex128 or np.complex64
 def tensor_type():
     """return complex type."""
-    if tensor_width is 64:
+    if tensor_width == 64:
         return np.complex64
     return np.complex128
