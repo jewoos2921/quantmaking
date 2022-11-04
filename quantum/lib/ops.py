@@ -359,3 +359,7 @@ def Measure(psi: state.State, idx: int,
 
     # Return original state, enable chaining.
     return np.real(prob0), psi
+
+
+def Pauli(d: int = 1) -> Operator:
+    return Identity(d), PauliX(d), PauliY(d), PauliZ(d)
