@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from lib import state, ops
+from lib import state, ops, circuit
 
 
 def fulladder_matrix(psi: state.State):
@@ -15,6 +15,16 @@ def fulladder_matrix(psi: state.State):
     psi = ops.ControlledU(1, 2, ops.Cnot(2, 4))(psi, 1)
     psi = ops.Cnot(2, 3)(psi, 2)
     return psi
+
+
+def fulladder_qc(qc: circuit.qc) -> None:
+    """Non-quantum-exploiting, classic full adder."""
+    qc.cx(0, 3)
+    qc.cx(1, 3)
+    qc.ccx(0, 1, 4)
+    qc.ccx(0, 2, 4)
+    qc.ccx(1, 2, 4)
+    qc.cx(2, 3)
 
 
 def experiment_matrix(a: int, b: int, cin: int,

@@ -5,7 +5,7 @@ from typing import Optional, List
 
 import numpy as np
 
-from lib import tensor
+from lib import tensor, ops
 from lib import helper
 
 
@@ -62,6 +62,48 @@ class State(tensor.Tensor):
 
     def density(self) -> tensor.Tensor:
         return tensor.Tensor(np.outer(self, self.conj()))
+
+    def apply1(self, gate, index: int) -> None:
+        """Apply single-qubit gate to this state."""
+
+        # To maintain qubit ordering in this infrastructure
+        # index needs to be reversed.
+        #
+        index = self.nbits - index - 1
+        pow_2_index = 1 << index
+        g00 = gate[0, 0]
+        g01 = gate[0, 1]
+        g10 = gate[1, 0]
+        g11 = gate[1, 1]
+        for g in range(0, 1 << self.nbits, 1 << (index + 1)):
+            for i in range(g, g + pow_2_index):
+                t1 = g00 * self[i] + g01 * self[i + pow_2_index]
+                t2 = g10 * self[i] + g11 * self[i + pow_2_index]
+                self[i] = t1
+                self[i + pow_2_index] = t2
+
+    def applyc(self, gate, ctl: int, target: int) -> None:
+        """Apply a controlled 2-qubit gate via explicit indexing."""
+
+        # To maintain qubit ordering in this infrastructure
+        # index needs to be reversed.
+        #
+        qbit = self.nbits - target - 1
+        pow_2_index = 2 ** qbit
+        ctl = self.nbits - ctl - 1
+        g00 = gate[0, 0]
+        g01 = gate[0, 1]
+        g10 = gate[1, 0]
+        g11 = gate[1, 1]
+        for g in range(0, 1 << self.nbits, 1 << (qbit + 1)):
+            idx_base = g * (1 << self.nbits)
+            for i in range(g, g + pow_2_index):
+                idx = idx_base + i
+                if idx & (1 << ctl):
+                    t1 = g00 * self[i] + g01 * self[i + pow_2_index]
+                    t2 = g10 * self[i] + g11 * self[i + pow_2_index]
+                    self[i] = t1
+                    self[i + pow_2_index] = t2
 
 
 def state_to_strings(bits) -> str:
@@ -167,3 +209,38 @@ def rand(n: int) -> State:
 # These two are used so commonly, make them constants.
 zero = zeros(1)
 one = ones(1)
+
+
+class Reg:
+    def __init__(self, size: int, it=0, global_reg: int = None):
+        self.size = size
+        self.global_idx = list(range(global_reg, global_reg + size))
+
+        self.val = [0] * size
+
+        if it:
+            if isinstance(it, int):
+                it = format(it, "0{}b".format(size))
+            if isinstance(it, (str, tuple, list)):
+                for idx, val in enumerate(it):
+                    if val == '1' or val == 1:
+                        self.val[idx] = 1
+
+    def __str__(self) -> str:
+        s = '/'
+        for _, val in enumerate(self.val):
+            s += f'{val}'
+        return s + ">"
+
+    def __getitem__(self, idx: int) -> int:
+        return self.global_idx[idx]
+
+    def __setitem__(self, idx: int, value: int) -> None:
+        self.val[idx] = value
+
+    @property
+    def nbits(self) -> int:
+        return self.size
+
+    def psi(self) -> State:
+        return bitstring(*self.val)
