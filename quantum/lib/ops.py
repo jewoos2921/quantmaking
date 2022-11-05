@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import cmath
 import math
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Callable
 
 import numpy as np
-from lib import tensor, state
+from lib import tensor, state, helper
 
 
 class Operator(tensor.Tensor):
@@ -363,3 +363,29 @@ def Measure(psi: state.State, idx: int,
 
 def Pauli(d: int = 1) -> Operator:
     return Identity(d), PauliX(d), PauliY(d), PauliZ(d)
+
+
+def OracleUF(nbits: int, f: Callable[[List[int]], int]):
+    """Make a n-qubit Oracle for function f (e.g. Deutsch, Grover)."""
+
+    # This Oracle is constructed similar to the implementation in
+    # ./deutsch.py, just with an n-bit x and a 1-bit y
+    #
+    dim = 2 ** nbits
+    u = np.zeros(dim ** 2).reshape(dim, dim)
+    for row in range(dim):
+        bits = helper.val2bits(row, nbits)
+        fx = f(bits[0:-1])  # f(x) without the y.
+        xor = bits[-1] ^ fx
+
+        new_bits = bits[0:-1]
+        new_bits.append(xor)
+
+        # Construct new column (int) from the new bit sequence.
+        new_col = helper.bits2val(new_bits)
+        u[row][new_col] = 1.0
+
+    op = Operator(u)
+    if not op.is_unitary():
+        raise AssertionError("Constructed non-unitary operator.")
+    return op
