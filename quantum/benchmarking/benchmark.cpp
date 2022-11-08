@@ -4,8 +4,8 @@
 
 # include <python3.12/Python.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <complex>
 
 #include <numpy/ndarraytypes.h>

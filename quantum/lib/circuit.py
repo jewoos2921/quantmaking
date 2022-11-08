@@ -8,7 +8,51 @@ from lib import state, ops, tensor
 sys.path.append("xgates.cpp")
 
 # import xgates
-import libxgates as xgates
+try:
+    import libxgates as xgates
+
+    apply1 = xgates.apply1
+    applyc = xgates.applyc
+except:
+    print("""
+  **************************************************************
+  WARNING: Could not find 'libxgates.so'.
+  Please build it and point PYTHONPATH to it.
+  Execution is being re-directed to a Python implementation,
+  performance may suffer greatly.
+  **************************************************************
+  """)
+
+
+    def apply1(psi, gate, nbits, qubit, bitwidth=0):
+        """Apply a single-qubit gate via explicit indexing."""
+
+        qubit = nbits - qubit - 1
+        two_q = 2 ** qubit
+        for g in range(0, 2 ** nbits, 2 ** (qubit + 1)):
+            for i in range(g, g + two_q):
+                t1 = gate[0] * psi[i] + gate[1] * psi[i + two_q]
+                t2 = gate[2] * psi[i] + gate[3] * psi[i + two_q]
+                psi[i] = t1
+                psi[i + two_q] = t2
+        return psi
+
+
+    def applyc(psi, gate, nbits, control, target, bitwidth=64):
+        """Apply a controlled 2-qubit gate via explicit indexing."""
+
+        qubit = nbits - target - 1
+        two_q = 2 ** qubit
+        control = nbits - control - 1
+        for g in range(0, 2 ** nbits, 2 ** (qubit + 1)):
+            for i in range(g, g + two_q):
+                idx = g * 2 ** nbits + i
+                if idx & (1 << control):
+                    t1 = gate[0] * psi[i] + gate[1] * psi[i + two_q]
+                    t2 = gate[2] * psi[i] + gate[3] * psi[i + two_q]
+                    psi[i] = t1
+                    psi[i + two_q] = t2
+        return psi
 
 
 def id(gate: ops.Operator) -> ops.Operator:

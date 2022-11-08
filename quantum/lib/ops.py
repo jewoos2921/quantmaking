@@ -389,3 +389,28 @@ def OracleUF(nbits: int, f: Callable[[List[int]], int]):
     if not op.is_unitary():
         raise AssertionError("Constructed non-unitary operator.")
     return op
+
+
+def Qft(nbits: int) -> Operator:
+    """Make an n-bit QFT operator"""
+
+    op = Identity(nbits)
+    h = Hadamard()
+
+    for idx in range(nbits):
+        # Each qubit first gets a Hadamard
+        op = op(h, idx)
+
+        # Each qubit now gets a sequence of Rk(2), Rk(3), ..., Rk(nbits)
+        # Controlled by qubit (1, 2, ..., nbits-1).
+        for rk in range(2, nbits - idx + 1):
+            controlled_from = idx + rk - 1
+            op = op(ControlledU(controlled_from, idx, Rk(rk)), idx)
+
+    # Now the qubits need to change their order.
+    for idx in range(nbits // 2):
+        op = op(Swap(idx, nbits - idx - 1), idx)
+
+    if not op.is_unitary():
+        raise AssertionError("Constructed non-unitary operator.")
+    return op

@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex>
-
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
