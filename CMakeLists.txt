@@ -24,5 +24,12 @@ add_executable(quantmaking
         bdt.cpp
         assetPrice.cpp
         cbdt.cpp
-        quantum/lib/xgates.cpp
-        quantum/benchmarking/benchmark.cpp quantum/libq/apply.cpp quantum/libq/gates.cpp)
+        hwtree.cpp
+        chwtPrice.cpp
+
+
+#        quantum/lib/xgates.cpp
+#        quantum/benchmarking/benchmark.cpp
+#        quantum/libq/apply.cpp
+#        quantum/libq/gates.cpp
+        )

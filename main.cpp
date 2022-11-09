@@ -3,5 +3,5 @@
 #include "makeModel.h"
 
 int main() {
-    make_assets2();
+    make_hll_white();
 }

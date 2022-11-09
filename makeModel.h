@@ -12,3 +12,6 @@ void make_CCirk();
 void make_assets();
 
 void make_assets2();
+
+
+void make_hll_white();
