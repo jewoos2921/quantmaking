@@ -299,3 +299,66 @@ void make_hll_white() {
     delete[] rate;
     delete[] rtime;
 }
+
+void make_black_karsinski() {
+    std::cout << std::setprecision(20);
+
+
+    int nrtime;
+
+    double *rtime, *rate;
+    nrtime = 12;
+
+
+    rtime = new double[nrtime];
+    rate = new double[nrtime];
+
+    rtime[0] = 0.25;
+    rate[0] = 0.0493;
+    rtime[1] = 0.5;
+    rate[1] = 0.0504;
+
+    rtime[2] = 0.75;
+    rate[2] = 0.0505;
+    rtime[3] = 1.0;
+    rate[3] = 0.0507;
+    rtime[4] = 1.5;
+    rate[4] = 0.0510;
+    rtime[5] = 2.0;
+    rate[5] = 0.0512;
+    rtime[6] = 3.0;
+    rate[6] = 0.0514;
+    rtime[7] = 4.0;
+    rate[7] = 0.0516;
+    rtime[8] = 5.0;
+    rate[8] = 0.0519;
+    rtime[9] = 7.0;
+    rate[9] = 0.0523;
+    rtime[10] = 10.0;
+    rate[10] = 0.0540;
+    rtime[11] = 15.0;
+    rate[11] = 0.0570;
+
+    int coupon_frequency = 1;
+    double bond_maturity = 10.0;
+    double node_dt = 1.0;
+    double notional = 100.0;
+    double coupon_rate = 0.0;
+
+    CHWTree hw;
+    hw.m_dt = 10.0;
+    hw.m_nnode = 10;
+    hw.m_alpha = 0.1;
+    hw.m_sigma = 0.01;
+
+    hw.build_black_karasinski_short_rate_tree(nrtime, rtime, rate);
+
+    double bond_price;
+
+    CHWTPrice zc_price(notional, coupon_rate, bond_maturity, coupon_frequency);
+
+    bond_price = zc_price.zero_coupon_bond_price_black_karasinski_short_rate_tree(hw); // 채권 가격 계산
+
+    delete[] rate;
+    delete[] rtime;
+}

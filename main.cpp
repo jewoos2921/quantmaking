@@ -3,5 +3,5 @@
 #include "makeModel.h"
 
 int main() {
-    make_hll_white();
+    make_black_karsinski();
 }

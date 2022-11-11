@@ -27,4 +27,7 @@ public:
 public:
     // Normal Distribution Trinimial Tree 생성
     void build_hull_white_short_rate_tree(int nrtime, double *time, double *rate);
+
+    // Log Normal distribution trinomial tree 생성
+    void build_black_karasinski_short_rate_tree(int nrtime, double *time, double *rate);
 };

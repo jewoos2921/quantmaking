@@ -25,4 +25,6 @@ public:
 
 public:
     double zero_coupon_bond_price(CHWTree &hw); // 채권가격 계산
+
+    double zero_coupon_bond_price_black_karasinski_short_rate_tree(CHWTree &hw);
 };

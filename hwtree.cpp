@@ -244,3 +244,217 @@ void CHWTree::build_hull_white_short_rate_tree(int nrtime, double *time, double 
     delete[] itime;
     delete[] irate;
 }
+
+void CHWTree::build_black_karasinski_short_rate_tree(int nrtime, double *time, double *rate) {
+    std::cout << "Black-Karasinski Model" << std::endl;
+
+    int i, j, k, m, imax, iter;
+    double dR, tmpP;
+    double *P, *itime, *irate;
+    double **nQ, **InR;
+    double alpha_rate, alpha_rate2, rPra;
+
+    m_jmax = static_cast<int>((ceil(0.1835 / (m_alpha * m_dt)))); // Jmax 계산
+
+    if (m_nnode - 1 <= m_jmax) {
+        imax = 2 * (m_nnode - 1) + 1;
+    } else {
+        imax = 2 * m_jmax + 1;
+    }
+
+    P = new double[m_nnode]; // 할인채
+    itime = new double[m_nnode]; // 노드 시점
+    irate = new double[m_nnode]; // 보간된 제로 레이트
+    InR = new double *[m_nnode]; // 대수적용 node short rate
+    nQ = new double *[m_nnode]; // Pure securities or discounted probability
+    m_ndf = new double *[m_nnode]; // node discount factor
+    m_nrate = new double *[m_nnode]; // node short rates
+
+    for (i = 0; i < m_nnode; ++i) {
+        nQ[i] = new double[imax];
+        InR[i] = new double[imax];
+        m_ndf[i] = new double[imax];
+        m_nrate[i] = new double[imax];
+    }
+
+    m_pu = new double[imax];
+    m_pm = new double[imax];
+    m_pd = new double[imax];
+
+    for (i = 0; i < m_nnode; ++i) {
+        for (j = 0; j < imax; ++j) {
+            InR[i][j] = 0.0;
+            nQ[i][j] = 0.0;
+        }
+        P[i] = 0.0;
+        itime[i] = (i + 1) * m_dt;
+        irate[i] = linear_interpolation(nrtime, time, rate, itime[i]);
+    }
+
+    InR[0][0] = 0.0;
+    dR = m_sigma * sqrt(3.0 * m_dt);
+
+
+    for (i = 1; i < m_nnode; ++i) {
+        if (i <= m_jmax) {
+            imax = 2 * i;
+        } else {
+            imax = 2 * m_jmax;
+        }
+        for (j = 0; j <= imax; ++j) {
+            if (i <= m_jmax) {
+                k = i - j;
+            } else {
+                k = m_jmax - j;
+            }
+            InR[i][j] = k * dR;
+        }
+    }
+
+    // 노드에서의 확률 계산
+    if (m_nnode - 1 <= m_jmax) {
+        // node 수가 jmax보다 작으므로 3방향으로 퍼져나감, 1번 확장 모양
+        for (j = 0; j <= 2 * (m_nnode - 1); ++j) {
+            k = m_nnode - 1 - j;
+            m_pu[j] = 1.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0) - m_alpha * k * m_dt) / 2.0;
+            m_pm[j] = 2.0 / 3.0 - pow((m_alpha * k * m_dt), 2.0);
+            m_pd[j] = 1.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0) + m_alpha * k * m_dt) / 2.0;
+        }
+    } else {
+        // node 수가 jmax보다 클때이므로 Jmax 또는 Jmin 시 수렴함
+        for (j = 0; j <= 2 * m_jmax; ++j) {
+            k = m_jmax - j;
+
+            if (j == 0) { // Jmax 시점, 2번 확장 모형
+                m_pu[j] = 7.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0)
+                                       - 3.0 * m_alpha * k * m_dt) / 2.0;
+
+                m_pm[j] = -1.0 / 3.0 - pow((m_alpha * k * m_dt), 2.0)
+                          + 2.0 * m_alpha * k * m_dt;
+
+                m_pd[j] = 1.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0)
+                                       - m_alpha * k * m_dt) / 2.0;
+
+            } else if (j == 2 * m_jmax) { // Jmin 시점, 3번 확장 모형
+                m_pu[j] = 1.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0)
+                                       + m_alpha * k * m_dt) / 2.0;
+
+                m_pm[j] = -1.0 / 3.0 - pow((m_alpha * k * m_dt), 2.0)
+                          - 2.0 * m_alpha * k * m_dt;
+
+                m_pd[j] = 7.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0)
+                                       + 3.0 * m_alpha * k * m_dt) / 2.0;
+
+            } else { // 기타일반 시점, 1번 확장 모형
+                m_pu[j] = 1.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0)
+                                       - m_alpha * k * m_dt) / 2.0;
+
+                m_pm[j] = 2.0 / 3.0 - pow((m_alpha * k * m_dt), 2.0);
+
+                m_pd[j] = 1.0 / 6.0 + (pow((m_alpha * k * m_dt), 2.0)
+                                       + m_alpha * k * m_dt) / 2.0;
+
+            }
+        }
+    }
+
+    nQ[0][0] = 1.0;
+    alpha_rate = log(irate[0]);
+    InR[0][0] += alpha_rate;
+    m_nrate[0][0] = exp(InR[0][0]);
+
+    double error, tolerance;
+    tolerance = 1.0e-15;
+    m_ndf[0][0] = exp(-m_nrate[0][0] * m_dt);
+
+    for (i = 0; i < m_nnode; ++i) {
+        P[i] = exp(-irate[i] * itime[i]);
+    }
+
+
+    // 노드에서의 상태가격 계산
+    for (i = 1; i < m_nnode; ++i) {
+        // node 수가 jamx보다 작은 경우, 1번 확장 모양
+        if (i <= m_jmax) {
+            imax = 2 * i - 2; // j, j-1, j+2까지 고려해주므로 -2로 적용
+            for (j = 0; j <= imax; ++j) {
+                if (m_nnode - 1 <= m_jmax) {
+                    m = m_nnode - i + j;
+                } else {
+                    m = m_jmax - i + 1 + j;
+                }
+
+                // (i, j)노드, (i, j+1)노드 , (i, j+2)노드에서 상태 가격
+                nQ[i][j] += nQ[i - 1][j] * m_pu[m] * exp(-m_nrate[i - 1][j] * m_dt);
+                nQ[i][j + 1] += nQ[i - 1][j] * m_pm[m] * exp(-m_nrate[i - 1][j] * m_dt);
+                nQ[i][j + 2] += nQ[i - 1][j] * m_pd[m] * exp(-m_nrate[i - 1][j] * m_dt);
+            }
+        } else {
+            imax = 2 * m_jmax; // j ,j+1, j+2 까지 고려 해주더라도 jmax와 jmin때문에 k를 적용하였으므로 -2를 적용하지 않는다.
+
+            for (j = 0; j <= imax; ++j) {
+                if (j == 0) {
+                    k = 0;
+                } else if (j == imax) {
+                    k = -2;
+                } else {
+                    k = -1;
+                }
+                m = j;
+                // (i, j)노드, (i, j+1)노드 , (i, j+2)노드에서 상태 가격
+                nQ[i][j + k] += nQ[i - 1][j] * m_pu[m] * exp(-m_nrate[i - 1][j] * m_dt);
+                nQ[i][j + k + 1] += nQ[i - 1][j] * m_pm[m] * exp(-m_nrate[i - 1][j] * m_dt);
+                nQ[i][j + k + 2] += nQ[i - 1][j] * m_pd[m] * exp(-m_nrate[i - 1][j] * m_dt);
+            }
+        }
+
+        // lognormal 분포에서는 alpha를 구하기위하여 newton raphon method가 들어감
+
+        if (i <= m_jmax) {
+            imax = 2 * i;
+        } else {
+            imax = 2 * m_jmax;
+        }
+
+        iter = 0;
+
+        do {
+
+            tmpP = 0.0;
+            rPra = 0.0;
+            for (j = 0; j <= imax; ++j) {
+                tmpP += exp(-exp(InR[i][j] + alpha_rate) * m_dt) * nQ[i][j]; // 임시 가격
+                rPra -= exp(-exp(InR[i][j] + alpha_rate) * m_dt)
+                        * exp(InR[i][j] + alpha_rate) * m_dt * nQ[i][j];
+                // round P / round alpha를 의미
+            }
+
+            // tmpP 와 P[i]의 가격차이가 최소가 되도록 alpha값 찾기
+            alpha_rate2 = alpha_rate - (tmpP - P[i]) / rPra;
+            error = fabs(alpha_rate2 - alpha_rate);
+            alpha_rate = alpha_rate2;
+            iter++;
+        } while (error > tolerance && iter < 100);
+
+        for (j = 0; j <= imax; ++j) {
+            InR[i][j] += alpha_rate; // 각노드에 보정값 적용
+            m_nrate[i][j] = exp(InR[i][j]);
+            if (m_nrate[i][j] < 0) {
+                std::cout << "단기이자울이 0보다 작습니다." << m_nrate[i][j] << std::endl;
+                exit(0);
+            } // lognormal 이므로 절대 있을수 없는 일
+            m_ndf[i][j] = exp(-m_nrate[i][j] * m_dt);
+        }
+    }
+
+    for (i = 0; i < m_nnode; ++i) {
+        delete[] InR[i];
+        delete[] nQ[i];
+    }
+
+    delete[] InR;
+    delete[] nQ;
+    delete[] P;
+    delete[] itime;
+    delete[] irate;
+}
