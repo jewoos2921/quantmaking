@@ -28,6 +28,7 @@ public:
     double **m_ndf{}; // node discount factor
     double **m_nQ{};  // 상태가격 (할인된 확률)
     double **m_nsrate{};  // short rate tree
+
     double *m_medianU{};  // short rate의 추정된 중위수
     double **m_nQd{}; // 하락상태의 상태가격
     double *m_nvol{}; // node volatility
@@ -39,4 +40,6 @@ public:
     void build_bdt_tree_vol_curve(int nrate, double *rtime,
                                   double *rate, int nvol, double *vtime, double *vol);
 
+    void build_bdt_tree_fixed_vol(int nrate, double *rtime,
+                                  double *rate, double vol);
 };

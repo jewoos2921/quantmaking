@@ -10,10 +10,9 @@
 CCBDT::CCBDT() {
     m_nnode = 100;
     m_dt = 1.0;
-    m_pu = .5;
-    m_pd = .5;
+    m_pu = 0.5;
+    m_pd = 0.5;
     m_bvolfix = true;
-
 }
 
 CCBDT::CCBDT(int n) {
@@ -21,6 +20,7 @@ CCBDT::CCBDT(int n) {
 
 CCBDT::CCBDT(double bond_maturity, double dt) {
     m_dt = dt;
+
     m_nnode = static_cast<int>(bond_maturity / dt) + 1; // 채권 만기까지 Tree 생성
 
     m_pu = 0.5;
@@ -63,7 +63,7 @@ CCBDT::~CCBDT() {
     delete[] m_time;
     delete[] m_rate;
 
-    if (m_bvolfix != true) {
+    if (!m_bvolfix) {
         for (int i = 0; i < m_nnode; ++i) {
             delete[] m_nQd[i];
         }
@@ -134,7 +134,8 @@ void CCBDT::build_bdt_tree_vol_curve(int nrate, double *rtime, double *rate, int
         PDB = 1.0 / std::pow((1.0 + m_rate[i - 1]), m_time[i - 1]);
 
         do {
-            f = (x1 + std::pow(x1, std::exp(-2 * iv * sqdt))) / (2.0 * (1.0 + m_nsrate[0][0] * m_dt));
+            f = (x1 + std::pow(x1, std::exp(-2 * iv * sqdt)))
+                / (2.0 * (1.0 + m_nsrate[0][0] * m_dt));
             fx = (1.0 / (2.0 * (1.0 + m_nsrate[0][0] * m_dt)))
                  * (1 + std::exp(-2.0 * iv * sqdt) * (std::pow(x1, std::exp(-2 * iv * sqdt) - 1)));
             x1 = x1 - (f - PDB) / fx;
@@ -208,7 +209,8 @@ void CCBDT::build_bdt_tree_vol_curve(int nrate, double *rtime, double *rate, int
             known[0] -= (f - Pu[i + 1]) * fx + (g - Pd[i + 1]) * gx;
             known[1] -= (f - Pu[i + 1]) * fy + (g - Pd[i + 1]) * gy;
 
-            gaussian_elimination(smatrix, known, unknwon, npram);
+            gaussian_elimination(smatrix, known,
+                                 unknwon, npram);
 
             x1 += unknwon[0];
             y1 += unknwon[1];
@@ -217,6 +219,7 @@ void CCBDT::build_bdt_tree_vol_curve(int nrate, double *rtime, double *rate, int
             for (j = 0; j < i; ++j) {
                 ju = i - 2 * j;
                 f += m_nQ[i][j] / (1.0 + x1 * std::exp(y1 * ju * sqdt) * m_dt);
+
                 jd = i - 2 * (j + 1);
                 g += m_nQ[i][j] / (1.0 + x1 * std::exp(y1 * jd * sqdt) * m_dt);
             }
@@ -260,4 +263,69 @@ void CCBDT::build_bdt_tree_vol_curve(int nrate, double *rtime, double *rate, int
 
     delete[] Pu;
     delete[] Pd;
+}
+
+void CCBDT::build_bdt_tree_fixed_vol(int nrate, double *rtime, double *rate, double vol) {
+    std::cout << "변동성을 고정시킨 BDT 모형" << std::endl;
+    int i, j, k, iter;
+    double x1, x2, f, fx, sqdt, Error, Epsilon, PDB;
+    Epsilon = 1.0e-15;
+
+    m_bvolfix = true;
+
+    m_time = new double[m_nnode];
+    m_rate = new double[m_nnode];
+
+    for (i = 0; i < m_nnode - 1; ++i) {
+        m_time[i] = (i + 1) * m_dt;
+        m_rate[i] = linear_interpolation(nrate, rtime, rate, m_time[i]);
+    }
+
+    m_medianU[0] = m_rate[0];
+    m_nsrate[0][0] = m_medianU[0];
+    m_ndf[0][0] = 1.0 / (1 + m_nsrate[0][0] * m_dt);
+    m_nQ[0][0] = 1.0;
+    sqdt = std::sqrt(m_dt);
+
+    for (i = 1; i < m_nnode - 1; ++i) {
+        m_nQ[i][0] = m_pu * m_nQ[i - 1][0] * m_ndf[i - 1][0];
+
+        for (j = 1; j < i; ++j) {
+            m_nQ[i][j] = m_pu * m_nQ[i - 1][j - 1] * m_ndf[i - 1][j - 1]
+                         + m_pd * m_nQ[i - 1][j] * m_ndf[i - 1][j];
+        }
+
+        m_nQ[i][i] = m_pd * m_nQ[i - 1][i - 1] * m_ndf[i - 1][i - 1];
+
+        PDB = 1.0 / std::pow((1.0 + m_rate[i]), m_time[i]);
+        x1 = m_medianU[i - 1];
+        iter = 0;
+        do {
+            f = 0.0;
+            fx = 0.0;
+            k = 0;
+
+            for (j = 0; j <= i; ++j) {
+                k = i - 2 * j;
+                f += m_nQ[i][j] / (1.0 + x1 * std::exp(vol * k * sqdt) * m_dt);
+                fx -= m_nQ[i][j] * std::pow((1.0 + x1 * std::exp(vol * k * sqdt) * m_dt), -2)
+                      * std::exp(vol * k * sqdt) * m_dt;
+            }
+
+            x2 = x1 - (f - PDB) / (fx);
+            Error = std::fabs(x2 - x1);
+            x1 = x2;
+            iter++;
+        } while (Error > Epsilon && iter < 1000);
+
+        m_medianU[i] = x1;
+        k = 0;
+        if (i < m_nnode) {
+            for (j = 0; j <= i; ++j) {
+                k = i - 2 * j;
+                m_nsrate[i][j] = m_medianU[i] * std::exp(vol * k * sqdt); // SPOT m_nsrate[][]을 적용한 1기간의 할인율 (단리 계산)
+                m_ndf[i][j] = 1.0 / (1.0 + m_nsrate[i][j] * m_dt);
+            }
+        }
+    }
 }

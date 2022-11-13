@@ -82,5 +82,87 @@ namespace libq {
         }
     }
 
+    void t(int target, qureg *reg) {
+        cmplx z = cexp(M_PI / 4.0);
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, target)) {
+                reg->amplitude[i] *= z;
+            }
+        }
+    }
+
+    void cu1(int control, int target, float gamma, qureg *reg) {
+        cmplx z = cexp(gamma);
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, control)) {
+                if (reg->bit_is_set(i, target)) {
+                    reg->amplitude[i] *= z;
+                }
+            }
+        }
+    }
+
+    void cv(int control, int target, qureg *reg) {
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, control)) {
+                if (reg->bit_is_set(i, target)) {
+                    static cmplx mv[4] = {cmplx(0.5, 0.5),
+                                          cmplx(0.5, -0.5),
+                                          cmplx(0.5, -0.5),
+                                          cmplx(0.5, 0.5)};
+                    libq_gate1(target, mv, reg);
+                }
+            }
+        }
+    }
+
+    void cv_adj(int control, int target, qureg *reg) {
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, control)) {
+                if (reg->bit_is_set(i, target)) {
+                    static cmplx mv[4] = {cmplx(0.5, -0.5),
+                                          cmplx(0.5, 0.5),
+                                          cmplx(0.5, 0.5),
+                                          cmplx(0.5, -0.5)};
+                    libq_gate1(target, mv, reg);
+                }
+            }
+        }
+    }
+
+    void cx(int control, int target, qureg *reg) {
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, control)) {
+                reg->bit_xor(i, target);
+            }
+        }
+    }
+
+    void cz(int control, int target, qureg *reg) {
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, control)) {
+                if (reg->bit_is_set(i, target)) {
+                    reg->amplitude[i] *= -1;
+                }
+            }
+        }
+    }
+
+    void ccx(int control0, int control1, int target, qureg *reg) {
+        for (int i = 0; i < reg->size; ++i) {
+            if (reg->bit_is_set(i, control0)) {
+                if (reg->bit_is_set(i, control1)) {
+                    reg->bit_xor(i, target);
+                }
+            }
+        }
+    }
+
+    void flush(qureg *reg) {
+        print_qureg_stats(reg);
+    }
+
 
 }
+
+

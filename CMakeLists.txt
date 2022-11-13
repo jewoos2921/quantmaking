@@ -26,10 +26,11 @@ add_executable(quantmaking
         cbdt.cpp
         hwtree.cpp
         chwtPrice.cpp
+        priceBlack.cpp
 
 
-#        quantum/lib/xgates.cpp
-#        quantum/benchmarking/benchmark.cpp
-#        quantum/libq/apply.cpp
-#        quantum/libq/gates.cpp
-        )
+        quantum/lib/xgates.cpp
+        quantum/benchmarking/benchmark.cpp
+        quantum/libq/apply.cpp
+        quantum/libq/gates.cpp
+        quantum/libq/qureg.cpp quantum/libq/gates_jit.cpp)

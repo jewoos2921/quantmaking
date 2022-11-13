@@ -10,6 +10,7 @@
 #include "makeModel.h"
 #include "assetPrice.h"
 #include "hwtree.h"
+#include "priceBlack.h"
 #include "chwtPrice.h"
 #include "bdt.h"
 #include "cbdt.h"
@@ -358,6 +359,95 @@ void make_black_karsinski() {
     CHWTPrice zc_price(notional, coupon_rate, bond_maturity, coupon_frequency);
 
     bond_price = zc_price.zero_coupon_bond_price_black_karasinski_short_rate_tree(hw); // 채권 가격 계산
+
+    delete[] rate;
+    delete[] rtime;
+}
+
+void make_black_bdt() {
+    std::cout << std::setprecision(20);
+
+
+    int nrtime;
+    double fixed_vol = 0.05;
+
+    double *rtime, *rate;
+    nrtime = 6;
+
+
+    rtime = new double[nrtime];
+    rate = new double[nrtime];
+
+    rtime[0] = 0.25;
+    rate[0] = 0.0493;
+
+    rtime[1] = 0.5;
+    rate[1] = 0.0504;
+
+    rtime[2] = 1.0;
+    rate[2] = 0.0507;
+
+    rtime[3] = 2.0;
+    rate[3] = 0.0512;
+
+    rtime[4] = 3.0;
+    rate[4] = 0.0514;
+
+    rtime[5] = 5.0;
+    rate[5] = 0.0519;
+
+    int nvtime = 6;
+    double *vtime, *vol;
+
+    vtime = new double[nvtime];
+    vol = new double[nvtime];
+
+    vtime[0] = 0.25;
+    vol[0] = 0.07;
+
+    vtime[1] = 0.5;
+    vol[1] = 0.06;
+
+    vtime[2] = 1.0;
+    vol[2] = 0.05;
+
+    vtime[3] = 2.0;
+    vol[3] = 0.045;
+
+    vtime[4] = 3.0;
+    vol[4] = 0.04;
+
+    vtime[5] = 5.0;
+    vol[5] = 0.03;
+
+    int coupon_frequency = 4;
+    double bond_maturity = 5.0;
+    double node_dt = 0.25;
+    double notional = 100.0;
+    double coupon_rate = 0.058;
+
+    CCBDT btt_vf(bond_maturity, node_dt);
+    btt_vf.build_bdt_tree_fixed_vol(nrtime, rtime, rate, fixed_vol);
+
+    double bondprice, optionprice, price;
+
+    CPriceBlack bond_price(notional, coupon_rate, bond_maturity, coupon_frequency);
+
+    bondprice = bond_price.coupon_bond_price(btt_vf);
+
+    bond_price.m_option_position = 1;
+    bond_price.m_option_maturity = 3.0;
+    bond_price.m_strike = 101.45;
+
+    optionprice = bond_price.coupon_bond_option_price(btt_vf);
+    price = bond_price.callable_coupon_bond_price(btt_vf);
+
+
+    CCBDT bdt_vc(bond_maturity, node_dt);
+    bdt_vc.build_bdt_tree_vol_curve(nrtime, rtime, rate, nvtime, vtime, vol);
+    bondprice = bond_price.coupon_bond_price(bdt_vc);
+    optionprice = bond_price.coupon_bond_option_price(bdt_vc);
+    price = bond_price.callable_coupon_bond_price(bdt_vc);
 
     delete[] rate;
     delete[] rtime;

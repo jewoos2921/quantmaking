@@ -3,5 +3,5 @@
 #include "makeModel.h"
 
 int main() {
-    make_black_karsinski();
+    make_black_bdt();
 }

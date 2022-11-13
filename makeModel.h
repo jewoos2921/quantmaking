@@ -17,3 +17,5 @@ void make_assets2();
 void make_hll_white();
 
 void make_black_karsinski();
+
+void make_black_bdt();

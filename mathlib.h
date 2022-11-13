@@ -50,6 +50,7 @@ double inverse_normal_cumulative_distribution_function(double p); // 정규분�
 #define PI 3.14159265368979323846264338327950288419716939937519582097
 
 #define MAX(a, b) (((a)>(b))?(a):(b))
+#define MIN(a, b) (((a)<(b))?(a):(b))
 
 double normdistrand_BoxMuller();  // 정규분포 난수 생성
 

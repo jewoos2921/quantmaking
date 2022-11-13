@@ -9,6 +9,7 @@
 namespace libq {
     typedef std::complex<float> cmplx;
     typedef unsigned long long state_t;
+
 #define HASH_CASH_SIZE (1024 * 64)
 
     struct qureg_t {
